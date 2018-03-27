@@ -1,0 +1,41 @@
+
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]
+\samples: 500
+	step_vec: [3.e-02 4.e-07 0.e+00 0.e+00]
+	step_eta: 0.0
+	Initial_proposed_vec: [1.82682832e+00 3.20425316e-05 5.00000000e-01 1.00000000e+00]

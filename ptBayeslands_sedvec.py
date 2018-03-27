@@ -1011,7 +1011,7 @@ def main():
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 1
+	problem = 3
   
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -1036,7 +1036,7 @@ def main():
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 		realvalues_vec = [real_rain,real_erod, m, n]
 		
-		stepsize_ratio  = 0.04 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.01 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1058,15 +1058,15 @@ def main():
 		m = 0.5 # used to be  constants - we are now making them free parameters - to test here
 		n = 1
 		
-		likelihood_sediment = True
-
-		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
+
+									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		realvalues_vec = [1.5,5.e-5, m, n]
+		realvalues_vec = [real_rain,real_erod, m, n]
 		
-		stepsize_ratio  = 0.025 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.01 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1101,7 +1101,7 @@ def main():
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 		realvalues_vec = [real_rain ,real_erod, m, n]
 		
-		stepsize_ratio  = 0.05 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.01 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1179,7 +1179,7 @@ def main():
 
 	#parameters for Parallel Tempering
 	maxtemp = int(num_chains * 5)/2
-	swap_interval =   int(0.2 * (samples/num_chains)) #how ofen you swap neighbours
+	swap_interval =   int(0.1 * (samples/num_chains)) #how ofen you swap neighbours
 	print(swap_interval, ' swap')
 
 	timer_start = time.time()

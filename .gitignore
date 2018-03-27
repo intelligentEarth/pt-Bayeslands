@@ -22,7 +22,12 @@ __MACOSX
 doc/_build/
 tags
 doc/env/
+venv/
 
+Misc/
+Examples/Misc
+Examples/crater/trials/
+Examples/crater_*/trials/
 Examples/crater/mcmcresults_*
 Examples/crater_*/mcmcresults_*
 Examples/etopo/mcmcresults_*

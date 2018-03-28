@@ -137,7 +137,7 @@ class ptReplica(multiprocessing.Process):
 		dzreg = np.reshape(dzi,(ny,nx))
 		return zreg,dzreg
 
-	def run_badlands(self, input_vector):
+	def run_badlands(self, rain, erodibility, m, n):
 
 		model = badlandsModel()
 
@@ -145,15 +145,15 @@ class ptReplica(multiprocessing.Process):
 		model.load_xml(str(self.run_nb), self.input, muted=self.muted)
 
 		# Adjust erodibility based on given parameter
-		model.input.SPLero = input_vector[1] 
-		model.flow.erodibility.fill(input_vector[1] )
+		model.input.SPLero = erodibility
+		model.flow.erodibility.fill(erodibility)
 
 		# Adjust precipitation values based on given parameter
-		model.force.rainVal[:] = input_vector[0] 
+		model.force.rainVal[:] = rain
 
 		# Adjust m and n values
-		model.input.SPLm = input_vector[2] 
-		model.input.SPLn = input_vector[3] 
+		model.input.SPLm = m
+		model.input.SPLn = n
 
 		elev_vec = collections.OrderedDict()
 		erodep_vec = collections.OrderedDict()
@@ -162,10 +162,9 @@ class ptReplica(multiprocessing.Process):
 		for x in range(len(self.sim_interval)):
 			self.simtime = self.sim_interval[x]
 
-
 			model.run_to_time(self.simtime, muted=self.muted)
 
-		 
+			#elev, erodep = self.interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
 			elev, erodep = self.interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
 
 			erodep_pts = np.zeros((self.erodep_coords.shape[0]))
@@ -221,7 +220,7 @@ class ptReplica(multiprocessing.Process):
 
 	def likelihood_func(self,input_vector ):
 
-		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector )
+		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector[0], input_vector[1], input_vector[2],input_vector[3])
 
 
 		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size
@@ -274,7 +273,7 @@ class ptReplica(multiprocessing.Process):
  
 
 		#  initial predictions from Blackbox model
-		initial_predicted_elev, initial_predicted_erodep, init_pred_erodep_pts_vec = self.run_badlands(v_current)
+		initial_predicted_elev, initial_predicted_erodep, init_pred_erodep_pts_vec = self.run_badlands(v_current[0], v_current[1], v_current[2], v_current[3])
 	 	 
 
 		#----------------------------------------------------------------------------
@@ -349,7 +348,11 @@ class ptReplica(multiprocessing.Process):
 				elif v_proposal[j] < self.minlimits_vec[j]:
 					v_proposal[j] = v_current[j]
 
-			print(v_proposal)  
+			print(v_proposal) 
+
+ 
+
+
 			# Passing paramters to calculate likelihood and rmse with new tau
 			[likelihood_proposal, predicted_elev, predicted_erodep,pred_erodep_pts] = self.likelihood_func(v_proposal)
  
@@ -380,7 +383,6 @@ class ptReplica(multiprocessing.Process):
 			if u < mh_prob: # Accept sample
 				print (v_proposal,   i,likelihood_proposal, self.temperature, num_accepted, ' is accepted - rain, erod, step rain, step erod, likh')
 				count_list.append(i)            # Append sample number to accepted list
-				
 				likelihood = likelihood_proposal
 				 
 				v_current = v_proposal
@@ -942,12 +944,12 @@ def main():
 	random.seed(time.time())
 	muted = True
 
-	samples = 10000   # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 10000    # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 3
+	problem = 1
   
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -964,8 +966,8 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5, 2, 3]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same

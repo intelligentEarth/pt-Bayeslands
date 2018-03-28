@@ -1,0 +1,51 @@
+
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]
+\samples: 1000
+	stepsize_vec: [6.e-02 8.e-08 0.e+00 0.e+00]
+	step_ratio_vec: [0.02 0.02 0.02 0.02]
+	swap interval: 100
+	Initial_proposed_vec: [2.80821668e-01 3.12559179e-06 5.00000000e-01 1.00000000e+00]

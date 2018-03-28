@@ -17,6 +17,9 @@ from pylab import rcParams
 import collections
 
 
+from scipy import special
+
+
 import fnmatch
 import shutil
 from PIL import Image
@@ -92,7 +95,7 @@ class ptReplica(multiprocessing.Process):
 		self.erodep_coords = erodep_coords
 		self.real_elev = real_elev
 
-		self.eta_stepratio =0
+		self.eta_stepratio = 0.05
 
 
 		self.burn_in = burn_in
@@ -134,7 +137,7 @@ class ptReplica(multiprocessing.Process):
 		dzreg = np.reshape(dzi,(ny,nx))
 		return zreg,dzreg
 
-	def run_badlands(self, rain, erodibility, m, n):
+	def run_badlands(self, input_vector):
 
 		model = badlandsModel()
 
@@ -142,15 +145,15 @@ class ptReplica(multiprocessing.Process):
 		model.load_xml(str(self.run_nb), self.input, muted=self.muted)
 
 		# Adjust erodibility based on given parameter
-		model.input.SPLero = erodibility
-		model.flow.erodibility.fill(erodibility)
+		model.input.SPLero = input_vector[1] 
+		model.flow.erodibility.fill(input_vector[1] )
 
 		# Adjust precipitation values based on given parameter
-		model.force.rainVal[:] = rain
+		model.force.rainVal[:] = input_vector[0] 
 
 		# Adjust m and n values
-		model.input.SPLm = m
-		model.input.SPLn = n
+		model.input.SPLm = input_vector[2] 
+		model.input.SPLn = input_vector[3] 
 
 		elev_vec = collections.OrderedDict()
 		erodep_vec = collections.OrderedDict()
@@ -159,8 +162,7 @@ class ptReplica(multiprocessing.Process):
 		for x in range(len(self.sim_interval)):
 			self.simtime = self.sim_interval[x]
 
-			model.run_to_time(self.simtime, muted=self.muted)
-
+		
 			#elev, erodep = self.interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
 			elev, erodep = self.interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
 
@@ -215,21 +217,31 @@ class ptReplica(multiprocessing.Process):
 		return zreg,dzreg
 
 
-	def likelihood_func(self,input_vector,  tausq, tau_erodep , tau_erodep_pts):
-		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector[0], input_vector[1], input_vector[2],input_vector[3])
+	def likelihood_func(self,input_vector ):
 
-		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq
+		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector )
 
+
+		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size
+
+		tau_erodep_pts =  (np.sum(np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts)))/self.real_erodep_pts.size
+ 
+		
+	
+		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq 
+
+
+		
 		if self.check_likehood_sed  == True:
-			#likelihood_erodep  = -0.5 * np.log(2* math.pi * tausq_erodep) - 0.5 * np.square(pred_erodep_vec[self.simtime] - real_erodep) / tausq_erodep		# In case erosion dep is full grid
-			likelihood_erodep_pts = -0.5 * np.log(2 * math.pi * tau_erodep_pts) - 0.5 * np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts) / tau_erodep_pts # only considers point or core of erodep
+		 	likelihood_erodep_pts = -0.5 * np.log(2 * math.pi * tau_erodep_pts) - 0.5 * np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts) / tau_erodep_pts # only considers point or core of erodep
 			likelihood = np.sum(likelihood_elev) + np.sum(likelihood_erodep_pts)
 
 		else:
 			likelihood = np.sum(likelihood_elev)
 
-
 		return [likelihood *(1.0/self.temperature), pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec]
+
+ 
 
 	def run(self):
 
@@ -260,50 +272,18 @@ class ptReplica(multiprocessing.Process):
  
 
 		#  initial predictions from Blackbox model
-		initial_predicted_elev, initial_predicted_erodep, init_pred_erodep_pts_vec = self.run_badlands(v_current[0], v_current[1], v_current[2], v_current[3])
-	 	
-	 	#------------------------------------------
-	 	#calculate eta - tau that are parameters that add noise to the predictions. Note each element of prediction (elev, seddep) has a separate eta- tau. 
-	 	#reason eta is used is to resolve numberical instablity by using the log scale. so actually both eta and tau represent one parameter that is pertubed by random-walk
-	 	
-	 	# we first get the estimate for initual values of eta and then calcualte the tau by exp 
-
-	 	eta_elev = np.log(np.var(initial_predicted_elev[self.simtime] - self.real_elev))
-		eta_erodep = np.log(np.var(initial_predicted_erodep[self.simtime] - self.real_erodep))
-		eta_erodep_pts = np.log(np.var(init_pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts))
-
-		tau_elev = np.exp(eta_elev)
-		tau_erodep = np.exp(eta_erodep)
-		tau_erodep_pts = np.exp(eta_erodep_pts)
-		#-----------------------------------------------------------------
-
-		#based on the initial values of eta and tau, estimate the step size of eta for each element (seddep, elev)
-
-
-
-		print(eta_elev, 'eta', tau_elev , ' tau')
-
-		step_eta_elev = np.abs(eta_elev * self.eta_stepratio)
-		step_eta_erodep = np.abs(eta_erodep * self.eta_stepratio)
-		step_eta_erodep_pts = np.abs(eta_erodep_pts * self.eta_stepratio)
-
-		print('eta_erodep_pts = ', eta_erodep_pts, 'step_eta_erodep_pts', step_eta_erodep_pts)
+		initial_predicted_elev, initial_predicted_erodep, init_pred_erodep_pts_vec = self.run_badlands(v_current)
+	 	 
 
 		#----------------------------------------------------------------------------
 
  
 		#calc initial likelihood with initial parameters
  
-		[likelihood, predicted_elev, pred_erodep, pred_erodep_pts] = self.likelihood_func(v_current,  tau_elev, tau_erodep, tau_erodep_pts)
+		[likelihood, predicted_elev, pred_erodep, pred_erodep_pts] = self.likelihood_func(v_current )
 
 		print('\tinitial likelihood:', likelihood)
-
-		#---------------------------------------
-		#now, create memory to save all the accepted tau proposals
-
-		pos_tau = np.zeros(samples)
-		pos_tau_erodep = np.zeros(samples)
-		pos_tau_erodep_pts = np.zeros(samples ) 
+ 
 
 		likeh_list = np.zeros((samples,2)) # one for posterior of likelihood and the other for all proposed likelihood
 
@@ -345,9 +325,12 @@ class ptReplica(multiprocessing.Process):
 
 		with file(('%s/description.txt' % (self.filename)),'a') as outfile:
 			outfile.write('\n\samples: {0}'.format(self.samples))
-			outfile.write('\n\tstep_vec: {0}'.format(stepsize_vec))  
-			outfile.write('\n\tstep_eta: {0}'.format(step_eta_elev))
+			outfile.write('\n\tstepsize_vec: {0}'.format(stepsize_vec))  
+			outfile.write('\n\tstep_ratio_vec: {0}'.format(self.stepratio_vec)) 
+			outfile.write('\n\tswap interval: {0}'.format(self.swap_interval))   
 			outfile.write('\n\tInitial_proposed_vec: {0}'.format(v_proposal))  
+
+			
 
 
 		
@@ -366,17 +349,11 @@ class ptReplica(multiprocessing.Process):
 
 			print(v_proposal) 
 
-
-			eta_elev_pro = np.random.normal(eta_elev,  step_eta_elev ) 
-
-			eta_erodep_pro =  np.random.normal(eta_erodep,  step_eta_erodep ) 
-
-			eta_erodep_pts_pro =  np.random.normal(eta_erodep_pts, step_eta_erodep_pts ) 
+ 
 
 
 			# Passing paramters to calculate likelihood and rmse with new tau
-			[likelihood_proposal, predicted_elev, predicted_erodep,pred_erodep_pts] = self.likelihood_func(v_proposal, math.exp(eta_elev_pro), math.exp(eta_erodep_pro)
-,  math.exp(eta_erodep_pts_pro))
+			[likelihood_proposal, predicted_elev, predicted_erodep,pred_erodep_pts] = self.likelihood_func(v_proposal)
  
  
 			# Difference in likelihood from previous accepted proposal
@@ -406,20 +383,14 @@ class ptReplica(multiprocessing.Process):
 				print (v_proposal,   i,likelihood_proposal, self.temperature, num_accepted, ' is accepted - rain, erod, step rain, step erod, likh')
 				count_list.append(i)            # Append sample number to accepted list
 				likelihood = likelihood_proposal
-				eta_elev = eta_elev_pro
-				eta_erodep = eta_erodep_pro
-				eta_erodep_pts = eta_erodep_pts_pro
-
+				 
 				v_current = v_proposal
   
 				pos_param[i+1,:] = v_proposal
 
 				likeh_list[i + 1,1]=likelihood 
 
-				pos_tau[i + 1] = math.exp(eta_elev_pro) # not so important to output and visualize
-				pos_tau_erodep[i + 1] = math.exp(eta_erodep_pro)  # not so important to output and visualize
-				pos_tau_erodep_pts[i + 1] = math.exp(eta_erodep_pts_pro)  # not so important to output and visualize
-
+			 
 
 				num_accepted = num_accepted + 1
 
@@ -439,16 +410,11 @@ class ptReplica(multiprocessing.Process):
 					num_div += 1
 
 			else: # Reject sample
-				pos_tau[i + 1] = pos_tau[i,]  # not so important to output and visualize 
-				pos_tau_erodep[i + 1] = pos_tau_erodep[i,]  # not so important to output and visualize
-				pos_tau_erodep_pts[i + 1] = pos_tau_erodep_pts[i,]  # not so important to output and visualize
-
-				likeh_list[i + 1, 1]=likeh_list[i,1] 
+			 	likeh_list[i + 1, 1]=likeh_list[i,1] 
 
 				pos_param[i+1,:] = pos_param[i,:]
  
-
-				#print(v_proposal, i,likelihood_proposal, self.temperature, num_accepted,' rejected - rain, erod')
+ 
 
 				if i>burnsamples:
 
@@ -490,7 +456,7 @@ class ptReplica(multiprocessing.Process):
 					plt.clf()
 
  
-				others = np.asarray([eta_elev, eta_erodep_pts, likelihood])
+				others = np.asarray([likelihood])
 				param = np.concatenate([v_current,others])     
 			 
 				# paramater placed in queue for swapping between chains
@@ -509,10 +475,8 @@ class ptReplica(multiprocessing.Process):
 
 						print(result, ' res back')
 						
-						v_current= result[0:v_current.size]   
-						eta_elev = result[v_current.size]                             # %%%%%%%%%%%%%%%%%%%   UPDATE when Region Rainfall with erod vec changes
-						eta_erodep_pts = result[v_current.size+1] 
-						likelihood = result[v_current.size+2]
+						v_current= result[0:v_current.size]     
+						likelihood = result[v_current.size]
 
 					except:
 						print ('error')
@@ -532,14 +496,12 @@ class ptReplica(multiprocessing.Process):
 
 		#--------------------------------------------------------------- 
 
-		others = np.asarray([eta_elev, eta_erodep_pts, likelihood])
+		others = np.asarray([ likelihood])
 		param = np.concatenate([v_current,others])   
 
 		self.parameter_queue.put(param)
 
- 
-		file_name = self.filename+'/posterior/pos_tau/chain_'+ str(self.temperature)+ '.txt'
-		np.savetxt(file_name,pos_tau, fmt='%1.2f')
+  
  
 		file_name = self.filename+'/posterior/pos_parameters/chain_'+ str(self.temperature)+ '.txt'
 		np.savetxt(file_name,pos_param )
@@ -620,12 +582,12 @@ class ParallelTempering:
 
 		self.erodep_pts  = real_erodep_pts
 		self.real_elev = real_elev
-		self.vec_parameters = np.asarray(vec_parameters)
+		self.vec_parameters =   np.random.uniform(minlimits_vec, maxlimits_vec) # will begin from diff position in each replica (comment if not needed)
 
 
 		self.assign_temptarures()
 		for i in xrange(0, self.num_chains):
-			self.chains.append(ptReplica( vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed ,self.swap_interval, sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
+			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed ,self.swap_interval, sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
 		 	
 			
 	
@@ -636,9 +598,7 @@ class ParallelTempering:
 		swap_proposal = np.ones(self.num_chains-1) 
 		
 		# create parameter holders for paramaters that will be swapped
-		replica_param = np.zeros((self.num_chains, self.num_param)) 
-		replica_eta_elev = np.zeros(self.num_chains)
-		replica_eta_erodep = np.zeros(self.num_chains)
+		replica_param = np.zeros((self.num_chains, self.num_param))  
 		lhood = np.zeros(self.num_chains)
 
 		# Define the starting and ending of MCMC Chains
@@ -689,10 +649,8 @@ class ParallelTempering:
 			for j in range(0,self.num_chains): 
 				if self.chain_parameters[j].empty() is False :
 					result =  self.chain_parameters[j].get()
-					replica_param[j,:] = result[0:self.num_param]  
-					replica_eta_elev[j] = result[self.num_param] 
-					replica_eta_erodep[j] = result[self.num_param+1]
-					lhood[j] = result[self.num_param+2]
+					replica_param[j,:] = result[0:self.num_param]   
+					lhood[j] = result[self.num_param]
  
  
 
@@ -713,13 +671,13 @@ class ParallelTempering:
 
 					number_exchange[l] = number_exchange[l] +1  
 
-					others = np.asarray([replica_eta_elev[l-1], replica_eta_erodep[l-1], lhood[l-1] ]  ) 
+					others = np.asarray([  lhood[l-1] ]  ) 
 					para = np.concatenate([replica_param[l-1,:],others])   
  
 				   
 					self.chain_parameters[l].put(para) 
 
-					others = np.asarray([replica_eta_elev[l], replica_eta_erodep[l], lhood[l] ] )
+					others = np.asarray([ lhood[l] ] )
 					param = np.concatenate([replica_param[l,:],others])
  
 					self.chain_parameters[l-1].put(param)
@@ -727,13 +685,13 @@ class ParallelTempering:
 				else:
 
 
-					others = np.asarray([replica_eta_elev[l-1], replica_eta_erodep[l-1], lhood[l-1] ])
+					others = np.asarray([  lhood[l-1] ])
 					para = np.concatenate([replica_param[l-1,:],others]) 
  
 				   
 					self.chain_parameters[l-1].put(para) 
 
-					others = np.asarray([replica_eta_elev[l], replica_eta_erodep[l], lhood[l]  ])
+					others = np.asarray([  lhood[l]  ])
 					param = np.concatenate([replica_param[l,:],others])
  
 					self.chain_parameters[l].put(param)
@@ -861,11 +819,6 @@ class ParallelTempering:
 
 		likelihood_vec = likehood_rep.transpose(2,0,1).reshape(2,-1)
 
-
-		#print(pos_param)
-
-		#print(x)
- 
  
 			 
 
@@ -875,14 +828,12 @@ class ParallelTempering:
 			for i in range(self.num_chains):
 				combined_topo[j,:,:] += replica_topo[j,i,:,:]  
 			combined_topo[j,:,:] = combined_topo[j,:,:]/self.num_chains
-
-			#combined_erodep += replica_erodep_pts[j,:]
+ 
 
 		combined_erodep = np.mean(replica_erodep_pts, axis = 0)
 
 		print(combined_erodep, 'combined_erodepm') 
-
-		#likehood_rep = np.reshape(likehood_rep, (self.num_chains * (self.NumSamples - burnin)))
+ 
 
 		accept = np.sum(accept_percent)/self.num_chains
 
@@ -925,10 +876,9 @@ class ParallelTempering:
 		ax.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
 		ax.set_title(' Posterior distribution', fontsize=  font+2)#, y=1.02)
 	
-		ax1 = fig.add_subplot(211)
-		#ax1.set_facecolor('#f2f2f3')
-		# ax1.set_axis_bgcolor("white")
-		n, rainbins, patches = ax1.hist(list_points,   alpha=0.5, facecolor='sandybrown', normed=False)	
+		ax1 = fig.add_subplot(211) 
+
+		n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)	
 		ax1.axvline(real_value)
 		ax1.grid(True)
 		ax1.set_ylabel('Frequency',size= font+1)
@@ -939,8 +889,7 @@ class ParallelTempering:
 		list_points = np.asarray(np.split(list_points,  self.num_chains ))
  
 
-
-		#slen = np.arange(0,list_points.shape[0],1) 
+ 
 
 		ax2.set_facecolor('#f2f2f3') 
 		ax2.plot( list_points.T , label=None)
@@ -954,19 +903,7 @@ class ParallelTempering:
  
 		plt.savefig(fname + '/' + title  + '_pos_.png', bbox_inches='tight', dpi=300, transparent=False)
 		plt.clf()
-
  
-
-
-		'''list_points = np.asarray(np.split(list_points,  self.num_chains ))
-
-		plt.plot(list_points.T)  
-		plt.xlabel('Samples')
-		plt.ylabel(' Parameter values')
-		plt.title("Parameter trace-plot")
-
-		plt.savefig(fname + '/' + title  + '_trace_.png', bbox_inches='tight', dpi=300, transparent=False)
-		plt.clf()'''
 
 
 	def viewGrid(self, width=1000, height=1000, zmin=None, zmax=None, zData=None, title='Predicted Topography', time_frame=None):
@@ -1006,7 +943,7 @@ def main():
 	random.seed(time.time())
 	muted = True
 
-	samples = 20000     # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 10000    # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
@@ -1028,15 +965,15 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5, 2, 3]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 		realvalues_vec = [real_rain,real_erod, m, n]
 		
-		stepsize_ratio  = 0.01 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1093,15 +1030,15 @@ def main():
 
 		likelihood_sediment = True 
 
-		maxlimits_vec = [3,7.e-6, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0 ,3.e-6, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3,7.e-6, 2, 3]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0 ,3.e-6, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 		realvalues_vec = [real_rain ,real_erod, m, n]
 		
-		stepsize_ratio  = 0.01 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1157,8 +1094,7 @@ def main():
 		fname = (problemfolder +'results_%s' % (run_nb))
 
 	#filename = ('trials_vec')
- 
-	make_directory((fname + '/posterior/pos_tau'))
+  
 	make_directory((fname + '/posterior/pos_parameters')) 
 	make_directory((fname + '/posterior/predicted_topo'))
 	make_directory((fname + '/posterior/pos_likelihood'))
@@ -1173,20 +1109,20 @@ def main():
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
 	num_chains = 10
+	swap_ratio = 0.1      #adapt these 
+	burn_in =0.1 
+	num_successive_topo = 4
 
 
  
 
 	#parameters for Parallel Tempering
 	maxtemp = int(num_chains * 5)/2
-	swap_interval =   int(0.1 * (samples/num_chains)) #how ofen you swap neighbours
+	swap_interval =   int(swap_ratio * (samples/num_chains)) #how ofen you swap neighbours
 	print(swap_interval, ' swap')
 
 	timer_start = time.time()
 
-	burn_in =0.1
-
-	num_successive_topo = 4
 
 	sim_interval = np.arange(0,  simtime+1, simtime/num_successive_topo) # for generating successive topography
 	print(sim_interval)

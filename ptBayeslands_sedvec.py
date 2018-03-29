@@ -55,7 +55,7 @@ from plotly.offline.offline import _plot_html
 
 
 class ptReplica(multiprocessing.Process):
-	def __init__(self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, realvalues_vec, check_likelihood_sed ,  swap_interval, sim_interval, muted, simtime, samples, real_elev,real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
+	def __init__(self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed ,  swap_interval, sim_interval, muted, simtime, samples, real_elev,real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
 		 		#	vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed , sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],self.swap_interval, burn_in))
 		
 
@@ -86,7 +86,7 @@ class ptReplica(multiprocessing.Process):
 		self.maxlimits_vec = np.asarray(maxlimits_vec)
 		self.stepratio_vec = np.asarray(stepratio_vec)
 
-		self.realvalues_vec = np.asarray(realvalues_vec) # true values of free parameters for comparision. Note this will not be avialable in real world application		 
+		#self.realvalues_vec = np.asarray(realvalues_vec) # true values of free parameters for comparision. Note this will not be avialable in real world application		 
 
 		self.check_likehood_sed =  check_likelihood_sed
 
@@ -553,7 +553,7 @@ class ParallelTempering:
 		self.num_param = num_param
 
 
-		self.realvalues_vec = np.asarray(realvalues_vec)
+		self.realvalues  =  realvalues_vec 
 		
 		# create queues for transfer of parameters between process chain
 		self.chain_parameters = [multiprocessing.Queue() for i in range(0, self.num_chains) ]
@@ -561,6 +561,7 @@ class ParallelTempering:
 		# two ways events are used to synchronize chains
 		self.event = [multiprocessing.Event() for i in range (self.num_chains)]
 		self.wait_chain = [multiprocessing.Event() for i in range (self.num_chains)]
+ 
 
 	
 	# assigin tempratures dynamically   
@@ -574,10 +575,11 @@ class ParallelTempering:
 			
 	
 	# Create the chains.. Each chain gets its own temprature
-	def initialize_chains (self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed, sim_interval, muted, simtime,   real_elev,   real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,   run_nb_str, burn_in):
+	def initialize_chains (self,  vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed, sim_interval, muted, simtime,   real_elev,   real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,   run_nb_str, burn_in):
  		self.burn_in = burn_in
 
 		self.sim_interval = sim_interval
+ 
 
 		self.erodep_pts  = real_erodep_pts
 		self.real_elev = real_elev
@@ -586,7 +588,7 @@ class ParallelTempering:
 
 		self.assign_temptarures()
 		for i in xrange(0, self.num_chains):
-			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed ,self.swap_interval, sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
+			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
 		 	
 			
 	
@@ -730,9 +732,10 @@ class ParallelTempering:
 
 		print(pos_param, 'pos +++')
 
-		for s in range(self.num_param): 
-			self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s),   self.realvalues_vec[s])
-		 
+		for s in range(self.num_param):  
+			self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s), self.realvalues[s,:]  )
+
+		  
 
  
 
@@ -851,7 +854,7 @@ class ParallelTempering:
 
 		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept
 
-	def plot_figure(self, list, title, real_value): 
+	def plot_figure(self, list, title, real_value ): 
 
 		list_points =  list
 
@@ -878,7 +881,13 @@ class ParallelTempering:
 		ax1 = fig.add_subplot(211) 
 
 		n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)	
-		ax1.axvline(real_value)
+  
+  		color = ['b','r', 'w', 'g', 'r', 'r', 'r','b', 'g']
+		for count, v in enumerate(real_value):
+			ax1.axvline(x=v, color='%s' %(color[count]), linestyle='dashed', linewidth=1) # comment when go real value is 
+
+		print(real_value)
+
 		ax1.grid(True)
 		ax1.set_ylabel('Frequency',size= font+1)
 		ax1.set_xlabel('Parameter values', size= font+1)
@@ -942,18 +951,22 @@ def main():
 	random.seed(time.time())
 	muted = True
 
-	samples = 10000   # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 400  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 3
+	problem = 1
   
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
 		xmlinput = problemfolder + 'crater.xml'
 		print('xmlinput', xmlinput)
 		simtime = 15000 
+
+		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
+		print (real_values)
+ 
 
 		m = 0.5 # used to be constants  
 		n = 1
@@ -970,9 +983,11 @@ def main():
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		realvalues_vec = [real_rain,real_erod, m, n]
+		#realvalues_vec = [real_rain,real_erod, m, n]
+
+
 		
-		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1129,11 +1144,11 @@ def main():
 	#-------------------------------------------------------------------------------------
 	#Create A a Patratellel Tempring object instance 
 	#-------------------------------------------------------------------------------------
-	pt = ParallelTempering(num_chains, maxtemp, samples,swap_interval,fname, realvalues_vec, num_param)
+	pt = ParallelTempering(num_chains, maxtemp, samples,swap_interval,fname, real_values, num_param)
 	#-------------------------------------------------------------------------------------
 	# intialize the MCMC chains
 	#-------------------------------------------------------------------------------------
-	pt.initialize_chains( vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, likelihood_sediment, sim_interval,  muted, simtime, final_elev, final_erodep, final_erodep_pts, erodep_coords, fname, xmlinput,   run_nb_str, burn_in)
+	pt.initialize_chains(  vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, likelihood_sediment, sim_interval,  muted, simtime, final_elev, final_erodep, final_erodep_pts, erodep_coords, fname, xmlinput,   run_nb_str, burn_in)
 	 
 
 
@@ -1148,6 +1163,7 @@ def main():
 	timer_end = time.time()
 
 	likelihood = likehood_rep[:,0] # just plot proposed likelihood 
+
  
 	likelihood = np.asarray(np.split(likelihood,  num_chains ))
  
@@ -1179,8 +1195,7 @@ def main():
  
 	plt.xlabel('Selected Coordinates')
 	plt.ylabel('Height in meters')
-	plt.title('Erosion Deposition')
-	#plt.xticks(index + bar_width, ('(x1,y1)', '(x2,y2)', '(x3,y3)', '(x4,y4)'))
+	plt.title('Erosion Deposition') 
 	plt.legend() 
 	plt.tight_layout() 
 	plt.savefig(fname + '/pos_erodep_pts.png')
@@ -1188,5 +1203,22 @@ def main():
 
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
 	np.savetxt(fname+'/time.txt',[ (timer_end-timer_start)/60], fmt='%1.1f'  )
+ 
+
+
+	likelihood_pos = likehood_rep[:,1]
+
+	print(likelihood_pos)
+
+
+
+	max_index = np.argmax(likelihood_pos) # find max of pos liklihood to get the max or optimal pos value 
+	optimal_para = pos_param[max_index,:]
+
+	print(optimal_para, ' is optimal set of parameter') 
+	print(likehood_rep[max_index:,1], ' is optimal likelihood')
+	np.savetxt(fname+'/optimal_para.txt',[optimal_para, likehood_rep[max_index:,1] ]  )
+
+
 	#stop()
 if __name__ == "__main__": main()

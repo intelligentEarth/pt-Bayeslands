@@ -553,6 +553,7 @@ class ParallelTempering:
 		self.num_param = num_param
 
 
+
 		self.realvalues  =  realvalues_vec 
 		
 		# create queues for transfer of parameters between process chain
@@ -728,31 +729,33 @@ class ParallelTempering:
 		print(number_exchange, 'num_exchange, process ended')
 
 
-		pos_param, likelihood_rep, accept_list, pred_topo, combined_erodep, accept = self.show_results('chain_')
+		pos_param, likelihood_rep, accept_list, pred_topo, combined_erodep, accept, pred_topofinal = self.show_results('chain_')
+
+		sqerror= self.mean_sqerror(combined_erodep, pred_topofinal) 
 
 		print(pos_param, 'pos +++')
 
+
+
 		for s in range(self.num_param):  
-			self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s), self.realvalues[s,:]  )
-
-		  
-
- 
+			self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s), self.realvalues[s,:]  ) 
 
  
 		for i in range(self.sim_interval.size):
 
 			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_topo[i,:,:], title='Predicted Topography', time_frame=self.sim_interval[i])
 
+		print(pos_param)
+ 
 		
+		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror)
 
-		#-------------------------------------------------------------------------------------
-		# recover posterior chains and merge into a single posterior chain
-		#-------------------------------------------------------------------------------------
+	def mean_sqerror(self,  pred_erodep, pred_elev ):
+		 
+		elev = np.sum(np.square(pred_elev - self.real_elev))  /self.real_elev.size
+ 		sed =  np.sum(np.square(pred_erodep - self.erodep_pts))/self.erodep_pts.size 
 
-
-		
-		return (pos_param,likelihood_rep, accept_list,combined_erodep)
+		return elev + sed
 
 
 	# Merge different MCMC chains y stacking them on top of each other
@@ -819,11 +822,7 @@ class ParallelTempering:
 
 		posterior = pos_param.transpose(2,0,1).reshape(self.num_param,-1)
 
-		likelihood_vec = likehood_rep.transpose(2,0,1).reshape(2,-1)
-
- 
-			 
-
+		likelihood_vec = likehood_rep.transpose(2,0,1).reshape(2,-1) 
  
 
 		for j in range(self.sim_interval.size):
@@ -832,15 +831,13 @@ class ParallelTempering:
 			combined_topo[j,:,:] = combined_topo[j,:,:]/self.num_chains
  
 
-		combined_erodep = np.mean(replica_erodep_pts, axis = 0)
-
-		print(combined_erodep, 'combined_erodepm') 
- 
+		combined_erodep = np.mean(replica_erodep_pts, axis = 0) 
 
 		accept = np.sum(accept_percent)/self.num_chains
 
 
-
+		pred_topofinal = combined_topo[-1,:,:] # get the last mean pedicted topo to calculate mean squared error loss
+ 
 
 		np.savetxt(self.folder + '/pos_param.txt', posterior.T)
  
@@ -852,7 +849,7 @@ class ParallelTempering:
 
 		np.savetxt(self.folder + '/acceptpercent.txt', [accept], fmt='%1.2f')
 
-		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept
+		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept, pred_topofinal
 
 	def plot_figure(self, list, title, real_value ): 
 
@@ -881,8 +878,10 @@ class ParallelTempering:
 		ax1 = fig.add_subplot(211) 
 
 		n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)	
+
+		#hex in matplotlib.colors.cnames.items():
   
-  		color = ['b','r', 'w', 'g', 'r', 'r', 'r','b', 'g']
+  		color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
 		for count, v in enumerate(real_value):
 			ax1.axvline(x=v, color='%s' %(color[count]), linestyle='dashed', linewidth=1) # comment when go real value is 
 
@@ -1006,26 +1005,36 @@ def main():
 		simtime = 50000
 
 
-		m = 0.5 # used to be  constants - we are now making them free parameters - to test here
+		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
+		print (real_values)
+ 
+
+		m = 0.5 # used to be constants  
 		n = 1
-		
-		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+
+		real_rain = 1.5
+		real_erod = 5.e-5
+
+
+		likelihood_sediment = True
+
+		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		realvalues_vec = [real_rain,real_erod, m, n]
+		#realvalues_vec = [real_rain,real_erod, m, n]
+
+
 		
-		stepsize_ratio  = 0.01 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
 		num_param = vec_parameters.size
 
 		print(vec_parameters) 
-
- 
 
 
 		erodep_coords = np.array([[60, 60], [72, 66], [85, 73], [90, 75]])  # need to hand pick given your problem
@@ -1036,27 +1045,35 @@ def main():
 		simtime = 500000
 
 
-		m = 0.5 # used to be  constants - we are now making them free parameters - to test here
+		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
+		print (real_values)
+ 
+
+		m = 0.5 # used to be constants  
 		n = 1
+
 		real_rain = 1.5
 		real_erod = 5.e-6
 
 
-		likelihood_sediment = True 
+		likelihood_sediment = True
 
-		maxlimits_vec = [3,7.e-6, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0 ,3.e-6, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-6, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-6, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		realvalues_vec = [real_rain ,real_erod, m, n]
+		#realvalues_vec = [real_rain,real_erod, m, n]
+
+
 		
-		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
 		num_param = vec_parameters.size
+
 		print(vec_parameters) 
 
 		erodep_coords = np.array([[42, 10], [39, 8], [75, 51], [59, 13], [40,5], [6,20], [14,66], [4,40],[72,73],[46,64]])  # need to hand pick given your problem
@@ -1067,29 +1084,48 @@ def main():
 		problemfolder = 'Examples/etopo/'
 		xmlinput = problemfolder + 'etopo.xml'
 		simtime = 500000
-		rainlimits = [0.0, 3.0]
-		erodlimts = [3.e-6, 7.e-6]
-		mlimit = [0.4, 0.6]
-		nlimit = [0.9, 1.1]
-		true_rain = 1.5
-		true_erod = 5.e-6
+		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
+		print (real_values)
+ 
 
-		stepsize_ratio_rain = 0.025
-		stepsize_ratio_erod = 0.025
+		m = 0.5 # used to be constants  
+		n = 1
+
+		real_rain = 1.5
+		real_erod = 5.e-5
+
+
 		likelihood_sediment = True
 
-		erodep_coords = np.array([[60, 60], [72, 66], [85, 73], [90, 75]])  # need to hand pick given your problem
+		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
+
+									#if you want to freeze a parameter, keep max and min limits the same
+		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
+		#realvalues_vec = [real_rain,real_erod, m, n]
+
+
+		
+		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+
+		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
+
+		num_param = vec_parameters.size
+
+		print(vec_parameters) 
+		
+		erodep_coords = np.array([[42, 10], [39, 8], [75, 51], [59, 13], [40,5], [6,20], [14,66], [4,40],[72,73],[46,64]])  # need to hand pick given your problem
+
 
 	elif problem == 5:
 		problemfolder = 'Examples/delta/'
 		xmlinput = problemfolder + 'delta.xml'
 		simtime = 500000
 
-		stepsize_ratio_rain = 0.025
-		stepsize_ratio_erod = 0.025
-		likelihood_sediment = True
+		# to be done later
 
-		erodep_coords = np.array([[60, 60], [72, 66], [85, 73], [90, 75]])  # need to hand pick given your problem
+	 
 	else:
 		print('choose some problem  ')
 
@@ -1155,7 +1191,7 @@ def main():
 	#-------------------------------------------------------------------------------------
 	#run the chains in a sequence in ascending order
 	#-------------------------------------------------------------------------------------
-	pos_param,likehood_rep, accept_list, combined_erodep = pt.run_chains()
+	pos_param,likehood_rep, accept_list, combined_erodep, sqerror = pt.run_chains()
 	print('sucessfully sampled')
 	#print(pos_rain)
 	#print(pos_erouud)
@@ -1202,7 +1238,7 @@ def main():
 	plt.clf()
 
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
-	np.savetxt(fname+'/time.txt',[ (timer_end-timer_start)/60], fmt='%1.1f'  )
+	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60, sqerror], fmt='%1.1f'  )
  
 
 
@@ -1213,11 +1249,19 @@ def main():
 
 
 	max_index = np.argmax(likelihood_pos) # find max of pos liklihood to get the max or optimal pos value 
-	optimal_para = pos_param[max_index,:]
+
+	print(max_index, ' max_index')
+	#print(pos_param, ' pos_param')
+
+	print(likehood_rep.shape, ' l k  shape')
+
+	optimal_para = pos_param[:, max_index]
 
 	print(optimal_para, ' is optimal set of parameter') 
-	print(likehood_rep[max_index:,1], ' is optimal likelihood')
-	np.savetxt(fname+'/optimal_para.txt',[optimal_para, likehood_rep[max_index:,1] ]  )
+	np.savetxt(fname+'/optimal_para.txt', optimal_para  )
+
+	print(likehood_rep[1,:max_index], ' is optimal likelihood')
+
 
 
 	#stop()

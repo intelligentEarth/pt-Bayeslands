@@ -56,7 +56,7 @@ from plotly.offline.offline import _plot_html
 
 class ptReplica(multiprocessing.Process):
 	def __init__(self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed ,  swap_interval, sim_interval, muted, simtime, samples, real_elev,real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
-		 		#	vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed , sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],self.swap_interval, burn_in))
+				#	vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed , sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],self.swap_interval, burn_in))
 		
 
 		#--------------------------------------------------------
@@ -142,7 +142,7 @@ class ptReplica(multiprocessing.Process):
 		model = badlandsModel()
 
 		# Load the XmL input file
-		model.load_xml(str(self.run_nb), self.input, muted=self.muted)
+		model.load_xml(str(self.run_nb), self.input, muted=True)
 
 		# Adjust erodibility based on given parameter
 		model.input.SPLero = input_vector[1] 
@@ -163,7 +163,7 @@ class ptReplica(multiprocessing.Process):
 			self.simtime = self.sim_interval[x]
 
 
-			model.run_to_time(self.simtime, muted=self.muted)
+			model.run_to_time(self.simtime, muted=True)
 
 		 
 			elev, erodep = self.interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
@@ -235,7 +235,7 @@ class ptReplica(multiprocessing.Process):
 
 		
 		if self.check_likehood_sed  == True:
-		 	likelihood_erodep_pts = -0.5 * np.log(2 * math.pi * tau_erodep_pts) - 0.5 * np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts) / tau_erodep_pts # only considers point or core of erodep
+			likelihood_erodep_pts = -0.5 * np.log(2 * math.pi * tau_erodep_pts) - 0.5 * np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts) / tau_erodep_pts # only considers point or core of erodep
 			likelihood = np.sum(likelihood_elev) + np.sum(likelihood_erodep_pts)
 
 		else:
@@ -275,7 +275,7 @@ class ptReplica(multiprocessing.Process):
 
 		#  initial predictions from Blackbox model
 		initial_predicted_elev, initial_predicted_erodep, init_pred_erodep_pts_vec = self.run_badlands(v_current)
-	 	 
+		 
 
 		#----------------------------------------------------------------------------
 
@@ -288,6 +288,9 @@ class ptReplica(multiprocessing.Process):
  
 
 		likeh_list = np.zeros((samples,2)) # one for posterior of likelihood and the other for all proposed likelihood
+		likeh_list[0,:] = [-10000, -10000] # to avoid prob in calc of 5th and 95th percentile   later
+
+
 
 		count_list.append(0) # just to count number of accepted for each chain (replica)
 		accept_list = np.zeros(samples)
@@ -409,7 +412,7 @@ class ptReplica(multiprocessing.Process):
 					num_div += 1
 
 			else: # Reject sample
-			 	likeh_list[i + 1, 1]=likeh_list[i,1] 
+				likeh_list[i + 1, 1]=likeh_list[i,1] 
 
 				pos_param[i+1,:] = pos_param[i,:]
  
@@ -552,6 +555,15 @@ class ParallelTempering:
 
 		self.num_param = num_param
 
+		self.erodep_coords = []
+
+		self.simtime = 0
+
+		self.run_nb = 0
+
+
+		self.input = []
+
 
 
 		self.realvalues  =  realvalues_vec 
@@ -577,10 +589,17 @@ class ParallelTempering:
 	
 	# Create the chains.. Each chain gets its own temprature
 	def initialize_chains (self,  vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed, sim_interval, muted, simtime,   real_elev,   real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,   run_nb_str, burn_in):
- 		self.burn_in = burn_in
+		self.burn_in = burn_in
+
+
+		self.input = xmlinput  
 
 		self.sim_interval = sim_interval
- 
+		self.simtime = simtime  
+
+		self.run_nb = run_nb_str
+
+		self.erodep_coords = erodep_coords
 
 		self.erodep_pts  = real_erodep_pts
 		self.real_elev = real_elev
@@ -590,7 +609,7 @@ class ParallelTempering:
 		self.assign_temptarures()
 		for i in xrange(0, self.num_chains):
 			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
-		 	
+			
 			
 	
 
@@ -743,17 +762,32 @@ class ParallelTempering:
  
 		for i in range(self.sim_interval.size):
 
-			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_topo[i,:,:], title='Predicted Topography', time_frame=self.sim_interval[i])
-
-		print(pos_param)
+			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_topo[i,:,:], title='Predicted Topography ', time_frame=self.sim_interval[i],  filename= 'mean')
  
+
+		optimal_para, para_5thperc, para_95thperc = self.get_uncertainity(likelihood_rep, pos_param)
+ 
+		pred_elev5th, pred_eroddep5th, pred_erd_pts5th = self.run_badlands(np.asarray(para_5thperc))
 		
-		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror)
+		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev5th[self.simtime], title='Pred. Topo. - 5th Percentile', time_frame= self.simtime, filename= '5th')
+ 
+ 		pred_elev95th, pred_eroddep95th, pred_erd_pts95th = self.run_badlands(para_95thperc)
+		
+		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev95th[self.simtime], title='Pred. Topo. - 95th Percentile', time_frame= self.simtime, filename = '95th')
+
+		pred_elevoptimal, pred_eroddepoptimal, pred_erd_optimal = self.run_badlands(optimal_para)
+		
+		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elevoptimal[self.simtime], title='Pred. Topo. - Optimal', time_frame= self.simtime, filename = 'optimal')
+
+		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
+
+		
+		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror, optimal_para, para_5thperc, para_95thperc)
 
 	def mean_sqerror(self,  pred_erodep, pred_elev ):
 		 
 		elev = np.sum(np.square(pred_elev - self.real_elev))  /self.real_elev.size
- 		sed =  np.sum(np.square(pred_erodep - self.erodep_pts))/self.erodep_pts.size 
+		sed =  np.sum(np.square(pred_erodep - self.erodep_pts))/self.erodep_pts.size 
 
 		return elev + sed
 
@@ -851,6 +885,119 @@ class ParallelTempering:
 
 		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept, pred_topofinal
 
+
+	def find_nearest(self, array,value): # just to find nearest value of a percentile (5th or 9th from pos likelihood)
+		idx = (np.abs(array-value)).argmin()
+		return array[idx], idx
+
+	def get_uncertainity(self, likehood_rep, pos_param ): 
+
+		likelihood_pos = likehood_rep[:,1]
+ 
+		a = np.percentile(likelihood_pos, 5)   
+		lhood_5thpercentile, index_5th = self.find_nearest(likelihood_pos,a)  
+		b = np.percentile(likelihood_pos, 95) 
+		lhood_95thpercentile, index_95th = self.find_nearest(likelihood_pos,b)  
+ 
+
+		max_index = np.argmax(likelihood_pos) # find max of pos liklihood to get the max or optimal pos value  
+
+		optimal_para = pos_param[:, max_index] 
+		para_5thperc = pos_param[:, index_5th]
+		para_95thperc = pos_param[:, index_95th]
+
+
+		print(optimal_para, ' is optimal set of parameter') 
+		print(para_5thperc, ' is 5thpercentile set of parameter')   
+		print(para_95thperc, ' is 95thpercentile set of parameter') 
+
+
+		return optimal_para, para_5thperc, para_95thperc
+
+
+	def run_badlands(self, input_vector): # this is same method in Replica class - copied here to get error uncertainity in topo pred
+
+		model = badlandsModel()
+
+		# Load the XmL input file
+		model.load_xml(str(self.run_nb), self.input, muted=True)
+
+		print(input_vector, ' input badlands')
+
+		# Adjust erodibility based on given parameter
+		model.input.SPLero = input_vector[1] 
+		model.flow.erodibility.fill(input_vector[1] )
+
+		# Adjust precipitation values based on given parameter
+		model.force.rainVal[:] = input_vector[0] 
+
+		# Adjust m and n values
+		model.input.SPLm = input_vector[2] 
+		model.input.SPLn = input_vector[3] 
+
+		elev_vec = collections.OrderedDict()
+		erodep_vec = collections.OrderedDict()
+		erodep_pts_vec = collections.OrderedDict()
+
+		for x in range(len(self.sim_interval)):
+			self.simtime = self.sim_interval[x]
+
+
+			model.run_to_time(self.simtime, muted=True)
+
+		 
+			elev, erodep = self.interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
+
+			erodep_pts = np.zeros((self.erodep_coords.shape[0]))
+
+			for count, val in enumerate(self.erodep_coords):
+				erodep_pts[count] = erodep[val[0], val[1]]
+
+			elev_vec[self.simtime] = elev
+			erodep_vec[self.simtime] = erodep
+
+			erodep_pts_vec[self.simtime] = erodep_pts
+
+
+		return elev_vec, erodep_vec, erodep_pts_vec
+
+	def interpolateArray(self, coords=None, z=None, dz=None):
+		"""
+		Interpolate the irregular spaced dataset from badlands on a regular grid.
+		"""
+		x, y = np.hsplit(coords, 2)
+		dx = (x[1]-x[0])[0]
+
+		nx = int((x.max() - x.min())/dx+1)
+		ny = int((y.max() - y.min())/dx+1)
+		xi = np.linspace(x.min(), x.max(), nx)
+		yi = np.linspace(y.min(), y.max(), ny)
+
+		xi, yi = np.meshgrid(xi, yi)
+		xyi = np.dstack([xi.flatten(), yi.flatten()])[0]
+		XY = np.column_stack((x,y))
+
+		tree = cKDTree(XY)
+		distances, indices = tree.query(xyi, k=3)
+		if len(z[indices].shape) == 3:
+			z_vals = z[indices][:,:,0]
+			dz_vals = dz[indices][:,:,0]
+		else:
+			z_vals = z[indices]
+			dz_vals = dz[indices]
+
+		zi = np.average(z_vals,weights=(1./distances), axis=1)
+		dzi = np.average(dz_vals,weights=(1./distances), axis=1)
+		onIDs = np.where(distances[:,0] == 0)[0]
+		if len(onIDs) > 0:
+			zi[onIDs] = z[indices[onIDs,0]]
+			dzi[onIDs] = dz[indices[onIDs,0]]
+		zreg = np.reshape(zi,(ny,nx))
+		dzreg = np.reshape(dzi,(ny,nx))
+		return zreg,dzreg
+
+
+
 	def plot_figure(self, list, title, real_value ): 
 
 		list_points =  list
@@ -881,7 +1028,7 @@ class ParallelTempering:
 
 		#hex in matplotlib.colors.cnames.items():
   
-  		color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
+		color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
 		for count, v in enumerate(real_value):
 			ax1.axvline(x=v, color='%s' %(color[count]), linestyle='dashed', linewidth=1) # comment when go real value is 
 
@@ -913,7 +1060,7 @@ class ParallelTempering:
  
 
 
-	def viewGrid(self, width=1000, height=1000, zmin=None, zmax=None, zData=None, title='Predicted Topography', time_frame=None):
+	def viewGrid(self, width=1000, height=1000, zmin=None, zmax=None, zData=None, title='Predicted Topography', time_frame=None, filename=None):
 
 		if zmin == None:
 			zmin =  zData.min()
@@ -934,23 +1081,32 @@ class ParallelTempering:
 				)
 			)
 
-		fig = Figure(data=data, layout=layout)
+		fig = Figure(data=data, layout=layout) 
+		graph = plotly.offline.plot(fig, auto_open=False, output_type='file', filename= self.folder +  '/pred_plots'+ '/pred_'+filename+'_'+str(time_frame)+ '_.html', validate=False)
 
-		graph = plotly.offline.plot(fig, auto_open=False, output_type='file', filename= self.folder +'/pred_timeframe_'+str(time_frame)+ '_.html', validate=False)
+ 		fname = self.folder + '/pred_plots'+'/pred_'+filename+'_'+str(time_frame)+ '_.png' 
+ 		elev_data = np.reshape(zData, zData.shape[0] * zData.shape[1] )   
+ 		hist, bin_edges = np.histogram(elev_data, density=True)
+		plt.hist(elev_data, bins='auto')  
+		plt.title("Predicted Topography Histogram")  
+		plt.xlabel('Height in meters')
+		plt.ylabel('Frequency')
+		plt.savefig(fname )
+		plt.clf()
 
-
-		return
 
 def make_directory (directory): 
 	if not os.path.exists(directory):
 		os.makedirs(directory)
+
+
 
 def main():
 
 	random.seed(time.time())
 	muted = True
 
-	samples = 400  # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 10000  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
@@ -976,8 +1132,8 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
@@ -1143,13 +1299,15 @@ def main():
 		os.makedirs(problemfolder +'results_%s' % (run_nb))
 		fname = (problemfolder +'results_%s' % (run_nb))
 
-	#filename = ('trials_vec')
+	#fname = ('sampleresults')
   
 	make_directory((fname + '/posterior/pos_parameters')) 
 	make_directory((fname + '/posterior/predicted_topo'))
 	make_directory((fname + '/posterior/pos_likelihood'))
 	make_directory((fname + '/posterior/accept_list'))
 	make_directory((fname + '/posterior/predicted_erodep'))
+
+	make_directory((fname + '/pred_plots'))
 
 	run_nb_str = 'results_' + str(run_nb)
 
@@ -1159,7 +1317,7 @@ def main():
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
 	num_chains = 10
-	swap_ratio = 0.1      #adapt these 
+	swap_ratio = 0.1    #adapt these 
 	burn_in =0.1 
 	num_successive_topo = 4
 
@@ -1191,16 +1349,13 @@ def main():
 	#-------------------------------------------------------------------------------------
 	#run the chains in a sequence in ascending order
 	#-------------------------------------------------------------------------------------
-	pos_param,likehood_rep, accept_list, combined_erodep, sqerror = pt.run_chains()
+	pos_param,likehood_rep, accept_list, combined_erodep, sqerror, optimal_para, para_5thperc, para_95thperc = pt.run_chains()
 	print('sucessfully sampled')
 	#print(pos_rain)
 	#print(pos_erouud)
 
-	timer_end = time.time()
-
-	likelihood = likehood_rep[:,0] # just plot proposed likelihood 
-
- 
+	timer_end = time.time() 
+	likelihood = likehood_rep[:,0] # just plot proposed likelihood  
 	likelihood = np.asarray(np.split(likelihood,  num_chains ))
  
  
@@ -1220,14 +1375,14 @@ def main():
 	opacity = 0.8
  
 	rects1 = plt.bar(index, final_erodep_pts, bar_width,
-                 alpha=opacity,
-                 color='b',
-                 label='Real')
+				 alpha=opacity,
+				 color='b',
+				 label='Real')
  
 	rects2 = plt.bar(index + bar_width, combined_erodep, bar_width,
-                 alpha=opacity,
-                 color='g',
-                 label='Predicted with uncertainity')
+				 alpha=opacity,
+				 color='g',
+				 label='Predicted with uncertainity')
  
 	plt.xlabel('Selected Coordinates')
 	plt.ylabel('Height in meters')
@@ -1238,29 +1393,14 @@ def main():
 	plt.clf()
 
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
-	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60, sqerror], fmt='%1.1f'  )
+	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60, sqerror, np.sqrt(sqerror)], fmt='%1.2f'  )
+
+
+	np.savetxt(fname+'/optimal_percentile_para.txt', [optimal_para, para_5thperc, para_95thperc] )
  
 
 
-	likelihood_pos = likehood_rep[:,1]
-
-	print(likelihood_pos)
-
-
-
-	max_index = np.argmax(likelihood_pos) # find max of pos liklihood to get the max or optimal pos value 
-
-	print(max_index, ' max_index')
-	#print(pos_param, ' pos_param')
-
-	print(likehood_rep.shape, ' l k  shape')
-
-	optimal_para = pos_param[:, max_index]
-
-	print(optimal_para, ' is optimal set of parameter') 
-	np.savetxt(fname+'/optimal_para.txt', optimal_para  )
-
-	print(likehood_rep[1,:max_index], ' is optimal likelihood')
+	#print(likehood_rep[1,:max_index], ' is optimal likelihood')
 
 
 

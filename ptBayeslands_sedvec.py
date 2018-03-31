@@ -1,3 +1,10 @@
+
+
+#Main Contributers:   Rohitash Chandra and Ratneel Deo  Email: c.rohitash@gmail.com, deo.ratneel@gmail.com
+
+# Bayeslands II: Parallel tempering for multi-core systems - Badlands
+
+
 from __future__ import print_function, division
 import multiprocessing
 
@@ -771,7 +778,7 @@ class ParallelTempering:
 		
 		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev5th[self.simtime], title='Pred. Topo. - 5th Percentile', time_frame= self.simtime, filename= '5th')
  
- 		pred_elev95th, pred_eroddep95th, pred_erd_pts95th = self.run_badlands(para_95thperc)
+		pred_elev95th, pred_eroddep95th, pred_erd_pts95th = self.run_badlands(para_95thperc)
 		
 		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev95th[self.simtime], title='Pred. Topo. - 95th Percentile', time_frame= self.simtime, filename = '95th')
 
@@ -781,8 +788,71 @@ class ParallelTempering:
 
 		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
 
+		self.view_2Duncertainity(pred_elevoptimal[self.simtime],   pred_elev5th[self.simtime], pred_elev95th[self.simtime], pred_topo)
 		
+		
+
 		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror, optimal_para, para_5thperc, para_95thperc)
+
+	def view_2Duncertainity(self,  elev_opt,   elev_5th, elev_95th, elev_mean ):
+
+		ymid = int(elev_opt.shape[1]/2)
+ 
+
+		x_ymid_mean = elev_mean[-1,:,:]
+
+		x_ymid_opt = elev_opt[:, ymid]
+		x_ymid_mean = elev_mean[:, ymid]
+		x_ymid_5th = elev_5th[:, ymid]
+		x_ymid_95th = elev_95th[:, ymid]
+		x_ymid_real = self.real_elev[:, ymid]
+
+
+		y_xmid_opt = elev_opt[:, ymid]
+		y_xmid_mean = elev_mean[:, ymid]
+		y_xmid_5th = elev_5th[:, ymid]
+		y_xmid_95th = elev_95th[:, ymid]
+		y_xmid_real = self.real_elev[:, ymid]
+ 
+
+
+		x = np.linspace(0, x_ymid_opt.size, num=x_ymid_opt.size)
+
+		x_ = np.linspace(0, y_xmid_opt.size, num=y_xmid_opt.size)
+
+
+
+		plt.plot(x, x_ymid_real, label='ground truth') 
+		#plt.plot(x, x_ymid_mean, label='pred. (mean)')
+		plt.plot(x, x_ymid_opt, label='pred. (optimal)')
+		plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
+		plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
+		plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.4)
+		plt.legend(loc='upper right')
+
+		plt.title("Uncertainty in topography prediction  ")
+		plt.savefig(self.folder+'/x_ymid_opt.png') 
+		plt.clf()
+
+
+		plt.plot(x, y_xmid_real, label='ground truth') 
+		#plt.plot(x, y_xmid_mean, label='pred. (mean)')
+		plt.plot(x, y_xmid_opt, label='pred. (optimal)')
+		plt.plot(x, y_xmid_5th, label='pred.(5th percen.)')
+		plt.plot(x, y_xmid_95th, label='pred.(95th percen.)')
+		plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4)
+		plt.legend(loc='upper right')
+
+		plt.title("Uncertainty in topography prediction  ")
+		plt.savefig(self.folder+'/y_xmid_opt.png') 
+		plt.clf()
+
+
+
+ 
+
+		 
+		 
 
 	def mean_sqerror(self,  pred_erodep, pred_elev ):
 		 
@@ -1084,9 +1154,9 @@ class ParallelTempering:
 		fig = Figure(data=data, layout=layout) 
 		graph = plotly.offline.plot(fig, auto_open=False, output_type='file', filename= self.folder +  '/pred_plots'+ '/pred_'+filename+'_'+str(time_frame)+ '_.html', validate=False)
 
- 		fname = self.folder + '/pred_plots'+'/pred_'+filename+'_'+str(time_frame)+ '_.png' 
- 		elev_data = np.reshape(zData, zData.shape[0] * zData.shape[1] )   
- 		hist, bin_edges = np.histogram(elev_data, density=True)
+		fname = self.folder + '/pred_plots'+'/pred_'+filename+'_'+str(time_frame)+ '_.png' 
+		elev_data = np.reshape(zData, zData.shape[0] * zData.shape[1] )   
+		hist, bin_edges = np.histogram(elev_data, density=True)
 		plt.hist(elev_data, bins='auto')  
 		plt.title("Predicted Topography Histogram")  
 		plt.xlabel('Height in meters')
@@ -1111,7 +1181,7 @@ def main():
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 1
+	problem = 3
   
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'

@@ -62,7 +62,7 @@ from plotly.offline.offline import _plot_html
 
 
 class ptReplica(multiprocessing.Process):
-	def __init__(self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed ,  swap_interval, sim_interval, muted, simtime, samples, real_elev,real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
+	def __init__(self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed ,  swap_interval, sim_interval, simtime, samples, real_elev,  real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
 				#	vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed , sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],self.swap_interval, burn_in))
 		
 
@@ -82,8 +82,7 @@ class ptReplica(multiprocessing.Process):
 
 		self.simtime = simtime
 		self.samples = samples
-		self.run_nb = run_nb
-		self.muted = muted 
+		self.run_nb = run_nb 
 
 		self.font = 9
 		self.width = 1 
@@ -98,7 +97,7 @@ class ptReplica(multiprocessing.Process):
 		self.check_likehood_sed =  check_likelihood_sed
 
 		self.real_erodep_pts = real_erodep_pts
-		self.real_erodep =  real_erodep  # this is 3D eroddep - this will barely be used in likelihood - so there is no need for it
+		#self.real_erodep =  real_erodep  # this is 3D eroddep - this will barely be used in likelihood - so there is no need for it
 		self.erodep_coords = erodep_coords
 		self.real_elev = real_elev
 
@@ -316,6 +315,7 @@ class ptReplica(multiprocessing.Process):
 		sum_erodep = deepcopy(pred_erodep)  # Creating storage for data
 		sum_erodep_pts = deepcopy(pred_erodep_pts)
 
+
  
 
 		print('time to change')
@@ -325,6 +325,14 @@ class ptReplica(multiprocessing.Process):
 
 
 		pos_param = np.zeros((samples,v_current.size)) 
+
+
+		list_yslicepred = np.zeros((samples,self.real_elev.shape[0]))  # slice taken at mid of topography along y axis  
+		list_xslicepred = np.zeros((samples,self.real_elev.shape[1])) # slice taken at mid of topography along x axis  
+		ymid = int(self.real_elev.shape[1]/2 ) #   cut the slice in the middle 
+		xmid = int(self.real_elev.shape[0]/2)
+
+
 
 		start = time.time() 
 
@@ -362,6 +370,8 @@ class ptReplica(multiprocessing.Process):
 			print(v_proposal)  
 			# Passing paramters to calculate likelihood and rmse with new tau
 			[likelihood_proposal, predicted_elev, predicted_erodep,pred_erodep_pts] = self.likelihood_func(v_proposal)
+
+			final_predtopo= predicted_elev[self.simtime]
  
  
 			# Difference in likelihood from previous accepted proposal
@@ -397,7 +407,10 @@ class ptReplica(multiprocessing.Process):
   
 				pos_param[i+1,:] = v_proposal
 
-				likeh_list[i + 1,1]=likelihood 
+				likeh_list[i + 1,1]=likelihood  
+
+				list_yslicepred[i+1,:] =  final_predtopo[:, ymid] # slice taken at mid of topography along y axis  
+				list_xslicepred[i+1,:]=   final_predtopo[xmid, :]  # slice taken at mid of topography along x axis 
 
 			 
 
@@ -422,6 +435,11 @@ class ptReplica(multiprocessing.Process):
 				likeh_list[i + 1, 1]=likeh_list[i,1] 
 
 				pos_param[i+1,:] = pos_param[i,:]
+
+				list_yslicepred[i+1,:] =  list_yslicepred[i,:] 
+				list_xslicepred[i+1,:]=   list_xslicepred[i,:]
+
+			
  
  
 
@@ -515,6 +533,12 @@ class ptReplica(multiprocessing.Process):
 		file_name = self.filename+'/posterior/pos_parameters/chain_'+ str(self.temperature)+ '.txt'
 		np.savetxt(file_name,pos_param )
 
+		file_name = self.filename+'/posterior/predicted_topo/chain_xslice_'+ str(self.temperature)+ '.txt'
+		np.savetxt(file_name, list_xslicepred )
+
+		file_name = self.filename+'/posterior/predicted_topo/chain_yslice_'+ str(self.temperature)+ '.txt'
+		np.savetxt(file_name, list_yslicepred )
+
 		file_name = self.filename+'/posterior/pos_likelihood/chain_'+ str(self.temperature)+ '.txt'
 		np.savetxt(file_name,likeh_list, fmt='%1.2f')
  
@@ -544,7 +568,7 @@ class ptReplica(multiprocessing.Process):
 
 class ParallelTempering:
 
-	def __init__(self, num_chains, maxtemp,NumSample,swap_interval, fname, realvalues_vec, num_param ):
+	def __init__(self, vec_parameters, num_chains, maxtemp,NumSample,swap_interval, fname, realvalues_vec, num_param,  real_elev, erodep_pts, erodep_coords, simtime, siminterval, resolu_factor, run_nb, inputxml):
 
 
 		self.swap_interval = swap_interval
@@ -556,22 +580,27 @@ class ParallelTempering:
 		self.NumSamples = int(NumSample/self.num_chains)
 		self.sub_sample_size = max(1, int( 0.05* self.NumSamples))
 
+		self.show_fulluncertainity = False # needed in cases when you reall want to see full prediction of 5th and 95th percentile of topo. takes more space 
 
-		self.erodep_pts  = []
-		self.real_elev = [] 
+
+		self.real_erodep_pts  = erodep_pts
+		self.real_elev = real_elev
+
+		self.resolu_factor =  resolu_factor
 
 		self.num_param = num_param
 
-		self.erodep_coords = []
+		self.erodep_coords = erodep_coords
 
-		self.simtime = 0
+		self.simtime = simtime
 
-		self.run_nb = 0
+		self.sim_interval = siminterval
 
+		self.run_nb =run_nb 
 
-		self.input = []
+		self.xmlinput = inputxml
 
-
+		self.vec_parameters = vec_parameters
 
 		self.realvalues  =  realvalues_vec 
 		
@@ -593,29 +622,16 @@ class ParallelTempering:
 			temp += tmpr_rate
 			print(self.tempratures[i])
 			
-	
-	# Create the chains.. Each chain gets its own temprature
-	def initialize_chains (self,  vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed, sim_interval, muted, simtime,   real_elev,   real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,   run_nb_str, burn_in):
+	 
+	def initialize_chains (self,     minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed,   burn_in):
 		self.burn_in = burn_in
-
-
-		self.input = xmlinput  
-
-		self.sim_interval = sim_interval
-		self.simtime = simtime  
-
-		self.run_nb = run_nb_str
-
-		self.erodep_coords = erodep_coords
-
-		self.erodep_pts  = real_erodep_pts
-		self.real_elev = real_elev
+ 
 		self.vec_parameters =   np.random.uniform(minlimits_vec, maxlimits_vec) # will begin from diff position in each replica (comment if not needed)
 
 
 		self.assign_temptarures()
 		for i in xrange(0, self.num_chains):
-			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
+			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
 			
 			
 	
@@ -755,11 +771,19 @@ class ParallelTempering:
 		print(number_exchange, 'num_exchange, process ended')
 
 
-		pos_param, likelihood_rep, accept_list, pred_topo, combined_erodep, accept, pred_topofinal = self.show_results('chain_')
+		pos_param, likelihood_rep, accept_list, pred_topo, combined_erodep, accept, pred_topofinal, list_xslice, list_yslice = self.show_results('chain_')
 
 		sqerror= self.mean_sqerror(combined_erodep, pred_topofinal) 
 
 		print(pos_param, 'pos +++')
+
+		self.view_crosssection_uncertainity(list_xslice, list_yslice)
+
+		optimal_para, para_5thperc, para_95thperc = self.get_uncertainity(likelihood_rep, pos_param)
+		np.savetxt(self.folder+'/optimal_percentile_para.txt', [optimal_para, para_5thperc, para_95thperc] )
+ 
+		
+		
 
 
 
@@ -771,79 +795,92 @@ class ParallelTempering:
 
 			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_topo[i,:,:], title='Predicted Topography ', time_frame=self.sim_interval[i],  filename= 'mean')
  
+		if self.show_fulluncertainity == True: # this to be used when you need output of the topo predictions - 5th and 95th percentiles
 
-		optimal_para, para_5thperc, para_95thperc = self.get_uncertainity(likelihood_rep, pos_param)
  
-		pred_elev5th, pred_eroddep5th, pred_erd_pts5th = self.run_badlands(np.asarray(para_5thperc))
+			pred_elev5th, pred_eroddep5th, pred_erd_pts5th = self.run_badlands(np.asarray(para_5thperc)) 
 		
-		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev5th[self.simtime], title='Pred. Topo. - 5th Percentile', time_frame= self.simtime, filename= '5th')
+			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev5th[self.simtime], title='Pred. Topo. - 5th Percentile', time_frame= self.simtime, filename= '5th')
  
-		pred_elev95th, pred_eroddep95th, pred_erd_pts95th = self.run_badlands(para_95thperc)
+			pred_elev95th, pred_eroddep95th, pred_erd_pts95th = self.run_badlands(para_95thperc)
 		
-		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev95th[self.simtime], title='Pred. Topo. - 95th Percentile', time_frame= self.simtime, filename = '95th')
+			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elev95th[self.simtime], title='Pred. Topo. - 95th Percentile', time_frame= self.simtime, filename = '95th')
 
-		pred_elevoptimal, pred_eroddepoptimal, pred_erd_optimal = self.run_badlands(optimal_para)
+			pred_elevoptimal, pred_eroddepoptimal, pred_erd_optimal = self.run_badlands(optimal_para)
 		
-		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elevoptimal[self.simtime], title='Pred. Topo. - Optimal', time_frame= self.simtime, filename = 'optimal')
+			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elevoptimal[self.simtime], title='Pred. Topo. - Optimal', time_frame= self.simtime, filename = 'optimal')
 
-		self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
+			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
 
-		self.view_2Duncertainity(pred_elevoptimal[self.simtime],   pred_elev5th[self.simtime], pred_elev95th[self.simtime], pred_topo)
-		
-		
+			
+			
 
-		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror, optimal_para, para_5thperc, para_95thperc)
+		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror )
 
-	def view_2Duncertainity(self,  elev_opt,   elev_5th, elev_95th, elev_mean ):
+	def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
 
-		ymid = int(elev_opt.shape[1]/2)
+		ymid = int(self.real_elev.shape[1]/2 ) #   cut the slice in the middle 
+		xmid = int(self.real_elev.shape[0]/2)
+
+		print(self.real_elev)
+
+		print(self.real_elev.shape, ' shape')
+
+		x_ymid_real = self.real_elev[xmid, :] 
+
+		print( x_ymid_real.shape , ' x_ymid_real shape')
+		y_xmid_real = self.real_elev[:, ymid ] 
+
+		 
+		x_ymid_mean = list_xslice.mean(axis=1)
+
+
+		print( x_ymid_mean.shape , ' x_ymid_mean shape')
+
+
+		x_ymid_5th = np.percentile(list_xslice, 5, axis=1)
+		x_ymid_95th= np.percentile(list_xslice, 95, axis=1)
+  
+		y_xmid_mean = list_yslice.mean(axis=1)
+		y_xmid_5th = np.percentile(list_yslice, 5, axis=1)
+		y_xmid_95th= np.percentile(list_yslice, 95, axis=1)
  
 
-		x_ymid_mean = elev_mean[-1,:,:]
+		x = np.linspace(0, x_ymid_mean.size / self.resolu_factor, num=x_ymid_mean.size) 
+		x_ = np.linspace(0, y_xmid_mean.size / self.resolu_factor, num=y_xmid_mean.size)
 
-		x_ymid_opt = elev_opt[:, ymid]
-		x_ymid_mean = elev_mean[:, ymid]
-		x_ymid_5th = elev_5th[:, ymid]
-		x_ymid_95th = elev_95th[:, ymid]
-		x_ymid_real = self.real_elev[:, ymid]
-
-
-		y_xmid_opt = elev_opt[:, ymid]
-		y_xmid_mean = elev_mean[:, ymid]
-		y_xmid_5th = elev_5th[:, ymid]
-		y_xmid_95th = elev_95th[:, ymid]
-		y_xmid_real = self.real_elev[:, ymid]
- 
-
-
-		x = np.linspace(0, x_ymid_opt.size, num=x_ymid_opt.size)
-
-		x_ = np.linspace(0, y_xmid_opt.size, num=y_xmid_opt.size)
+	  
 
 
 
 		plt.plot(x, x_ymid_real, label='ground truth') 
-		#plt.plot(x, x_ymid_mean, label='pred. (mean)')
-		plt.plot(x, x_ymid_opt, label='pred. (optimal)')
+		plt.plot(x, x_ymid_mean, label='pred. (mean)')
 		plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
 		plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
 		plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.4)
 		plt.legend(loc='upper right')
+		#plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
-		plt.title("Uncertainty in topography prediction  ")
+
+		plt.title("Uncertainty in topography prediction (cross section)  ")
+		plt.xlabel(' Distance in kilometers  ')
+		plt.ylabel(' Height in meters')
+		
 		plt.savefig(self.folder+'/x_ymid_opt.png') 
 		plt.clf()
 
 
-		plt.plot(x, y_xmid_real, label='ground truth') 
-		#plt.plot(x, y_xmid_mean, label='pred. (mean)')
-		plt.plot(x, y_xmid_opt, label='pred. (optimal)')
-		plt.plot(x, y_xmid_5th, label='pred.(5th percen.)')
-		plt.plot(x, y_xmid_95th, label='pred.(95th percen.)')
+		plt.plot(x_, y_xmid_real, label='ground truth') 
+		plt.plot(x_, y_xmid_mean, label='pred. (mean)') 
+		plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
+		plt.plot(x_, y_xmid_95th, label='pred.(95th percen.)')
+		plt.xlabel(' Distance in kilometers ')
+		plt.ylabel(' Height in meters')
+		
 		plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4)
 		plt.legend(loc='upper right')
 
-		plt.title("Uncertainty in topography prediction  ")
+		plt.title("Uncertainty in topography prediction  (cross section)  ")
 		plt.savefig(self.folder+'/y_xmid_opt.png') 
 		plt.clf()
 
@@ -857,7 +894,7 @@ class ParallelTempering:
 	def mean_sqerror(self,  pred_erodep, pred_elev ):
 		 
 		elev = np.sum(np.square(pred_elev - self.real_elev))  /self.real_elev.size
-		sed =  np.sum(np.square(pred_erodep - self.erodep_pts))/self.erodep_pts.size 
+		sed =  np.sum(np.square(pred_erodep - self.real_erodep_pts))/self.real_erodep_pts.size 
 
 		return elev + sed
 
@@ -867,7 +904,12 @@ class ParallelTempering:
 
 		burnin = int(self.NumSamples * self.burn_in)
 		pos_param = np.zeros((self.num_chains, self.NumSamples - burnin, self.num_param))
-		#pos_erod = np.zeros((self.num_chains, self.NumSamples - burnin))
+
+		list_xslice = np.zeros((self.num_chains, self.NumSamples - burnin, self.real_elev.shape[1]))
+
+		list_yslice = np.zeros((self.num_chains, self.NumSamples - burnin, self.real_elev.shape[0]))
+
+ 
 		likehood_rep = np.zeros((self.num_chains, self.NumSamples - burnin, 2 )) # index 1 for likelihood posterior and index 0 for Likelihood proposals. Note all likilihood proposals plotted only
 		accept_percent = np.zeros((self.num_chains, 1))
 
@@ -879,16 +921,26 @@ class ParallelTempering:
 		replica_topo = np.zeros((self.sim_interval.size, self.num_chains, topo.shape[0], topo.shape[1])) #3D
 		combined_topo = np.zeros(( self.sim_interval.size, topo.shape[0], topo.shape[1]))
 
-		replica_erodep_pts = np.zeros(( self.num_chains, self.erodep_pts.shape[0] ))
-		combined_erodep = np.zeros((self.erodep_pts.shape[0] ))
+		replica_erodep_pts = np.zeros(( self.num_chains, self.real_erodep_pts.shape[0] ))
+		combined_erodep = np.zeros((self.real_erodep_pts.shape[0] ))
  
+
+ 
+
 
 		for i in range(self.num_chains):
 			file_name = self.folder + '/posterior/pos_parameters/'+filename + str(self.tempratures[i]) + '.txt'
-			dat = np.loadtxt(file_name)
-
+			dat = np.loadtxt(file_name) 
 			pos_param[i, :, :] = dat[burnin:,:]
 
+			file_name = self.folder + '/posterior/predicted_topo/chain_xslice_'+  str(self.tempratures[i]) + '.txt'
+			dat = np.loadtxt(file_name) 
+			list_xslice[i, :, :] = dat[burnin:,:]
+
+
+			file_name = self.folder + '/posterior/predicted_topo/chain_yslice_'+  str(self.tempratures[i]) + '.txt'
+			dat = np.loadtxt(file_name) 
+			list_yslice[i, :, :] = dat[burnin:,:] 
 
 			file_name = self.folder + '/posterior/pos_likelihood/'+filename + str(self.tempratures[i]) + '.txt'
 			dat = np.loadtxt(file_name)
@@ -924,7 +976,11 @@ class ParallelTempering:
 
  
 
-		posterior = pos_param.transpose(2,0,1).reshape(self.num_param,-1)
+		posterior = pos_param.transpose(2,0,1).reshape(self.num_param,-1) 
+ 
+		xslice = list_xslice.transpose(2,0,1).reshape(self.real_elev.shape[1],-1) 
+		yslice = list_yslice.transpose(2,0,1).reshape(self.real_elev.shape[0],-1)
+ 
 
 		likelihood_vec = likehood_rep.transpose(2,0,1).reshape(2,-1) 
  
@@ -953,7 +1009,7 @@ class ParallelTempering:
 
 		np.savetxt(self.folder + '/acceptpercent.txt', [accept], fmt='%1.2f')
 
-		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept, pred_topofinal
+		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept, pred_topofinal, xslice, yslice
 
 
 	def find_nearest(self, array,value): # just to find nearest value of a percentile (5th or 9th from pos likelihood)
@@ -974,12 +1030,7 @@ class ParallelTempering:
 
 		optimal_para = pos_param[:, max_index] 
 		para_5thperc = pos_param[:, index_5th]
-		para_95thperc = pos_param[:, index_95th]
-
-
-		print(optimal_para, ' is optimal set of parameter') 
-		print(para_5thperc, ' is 5thpercentile set of parameter')   
-		print(para_95thperc, ' is 95thpercentile set of parameter') 
+		para_95thperc = pos_param[:, index_95th] 
 
 
 		return optimal_para, para_5thperc, para_95thperc
@@ -990,7 +1041,7 @@ class ParallelTempering:
 		model = badlandsModel()
 
 		# Load the XmL input file
-		model.load_xml(str(self.run_nb), self.input, muted=True)
+		model.load_xml(str(self.run_nb), self.xmlinput, muted=True)
 
 		print(input_vector, ' input badlands')
 
@@ -1095,8 +1146,7 @@ class ParallelTempering:
 		ax1 = fig.add_subplot(211) 
 
 		n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)	
-
-		#hex in matplotlib.colors.cnames.items():
+ 
   
 		color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
 		for count, v in enumerate(real_value):
@@ -1173,10 +1223,9 @@ def make_directory (directory):
 
 def main():
 
-	random.seed(time.time())
-	muted = True
+	random.seed(time.time()) 
 
-	samples = 10000  # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 300  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
@@ -1189,15 +1238,17 @@ def main():
 		print('xmlinput', xmlinput)
 		simtime = 15000 
 
-		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
-		print (real_values)
- 
+		resolu_factor =  20 # this helps visualize the surface distance in meters 
+
+		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
+		 
 
 		m = 0.5 # used to be constants  
 		n = 1
 
 		real_rain = 1.5
 		real_erod = 5.e-5
+ 
 
 
 		likelihood_sediment = True
@@ -1208,11 +1259,9 @@ def main():
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		#realvalues_vec = [real_rain,real_erod, m, n]
-
-
+		 
 		
-		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1230,16 +1279,18 @@ def main():
 		xmlinput = problemfolder + 'crater.xml'
 		simtime = 50000
 
+		resolu_factor =  20
 
-		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
-		print (real_values)
- 
+
+		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
+		 
 
 		m = 0.5 # used to be constants  
 		n = 1
 
 		real_rain = 1.5
 		real_erod = 5.e-5
+
 
 
 		likelihood_sediment = True
@@ -1250,12 +1301,9 @@ def main():
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		#realvalues_vec = [real_rain,real_erod, m, n]
-
-
+		 
 		
-		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
-
+		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
 		num_param = vec_parameters.size
@@ -1269,11 +1317,11 @@ def main():
 		problemfolder = 'Examples/etopo_fast/'
 		xmlinput = problemfolder + 'etopo.xml'
 		simtime = 500000
+		resolu_factor = 1.5
 
 
-		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
-		print (real_values)
- 
+		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
+		 
 
 		m = 0.5 # used to be constants  
 		n = 1
@@ -1290,11 +1338,8 @@ def main():
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		#realvalues_vec = [real_rain,real_erod, m, n]
-
-
-		
-		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		 	
+		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1310,10 +1355,10 @@ def main():
 		problemfolder = 'Examples/etopo/'
 		xmlinput = problemfolder + 'etopo.xml'
 		simtime = 500000
-		real_values = np.loadtxt(problemfolder + 'data/true_values.txt')
-		print (real_values)
- 
+		resolu_factor = 1.5
 
+		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
+		 
 		m = 0.5 # used to be constants  
 		n = 1
 
@@ -1329,11 +1374,9 @@ def main():
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		#realvalues_vec = [real_rain,real_erod, m, n]
-
-
-		
-		stepsize_ratio  = 0.03 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+	 
+ 	
+		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
@@ -1348,6 +1391,7 @@ def main():
 		problemfolder = 'Examples/delta/'
 		xmlinput = problemfolder + 'delta.xml'
 		simtime = 500000
+		resolu_factor = 1
 
 		# to be done later
 
@@ -1356,10 +1400,10 @@ def main():
 		print('choose some problem  ')
 
 	datapath = problemfolder + 'data/final_elev.txt'
-	final_elev = np.loadtxt(datapath)
-	final_erodep = np.loadtxt(problemfolder + 'data/final_erdp.txt')
+	groundtruth_elev = np.loadtxt(datapath)
+	groundtruth_erodep = np.loadtxt(problemfolder + 'data/final_erdp.txt')
 
-	final_erodep_pts = np.loadtxt(problemfolder + 'data/final_erdp_pts.txt')
+	groundtruth_erodep_pts = np.loadtxt(problemfolder + 'data/final_erdp_pts.txt')
 
 	fname = ""
 	run_nb = 0
@@ -1408,18 +1452,20 @@ def main():
 	#-------------------------------------------------------------------------------------
 	#Create A a Patratellel Tempring object instance 
 	#-------------------------------------------------------------------------------------
-	pt = ParallelTempering(num_chains, maxtemp, samples,swap_interval,fname, real_values, num_param)
+ 
+
+	pt = ParallelTempering(vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts, erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
 	#-------------------------------------------------------------------------------------
 	# intialize the MCMC chains
 	#-------------------------------------------------------------------------------------
-	pt.initialize_chains(  vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, likelihood_sediment, sim_interval,  muted, simtime, final_elev, final_erodep, final_erodep_pts, erodep_coords, fname, xmlinput,   run_nb_str, burn_in)
+	pt.initialize_chains(    minlimits_vec, maxlimits_vec, stepratio_vec, likelihood_sediment,   burn_in)
 	 
 
 
 	#-------------------------------------------------------------------------------------
 	#run the chains in a sequence in ascending order
 	#-------------------------------------------------------------------------------------
-	pos_param,likehood_rep, accept_list, combined_erodep, sqerror, optimal_para, para_5thperc, para_95thperc = pt.run_chains()
+	pos_param,likehood_rep, accept_list, combined_erodep, sqerror  = pt.run_chains()
 	print('sucessfully sampled')
 	#print(pos_rain)
 	#print(pos_erouud)
@@ -1440,11 +1486,11 @@ def main():
 	print(combined_erodep) 
 
 	fig, ax = plt.subplots()
-	index = np.arange(final_erodep_pts.size)
+	index = np.arange(groundtruth_erodep_pts.size)
 	bar_width = 0.35
 	opacity = 0.8
  
-	rects1 = plt.bar(index, final_erodep_pts, bar_width,
+	rects1 = plt.bar(index, groundtruth_erodep_pts, bar_width,
 				 alpha=opacity,
 				 color='b',
 				 label='Real')
@@ -1466,12 +1512,7 @@ def main():
 	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60, sqerror, np.sqrt(sqerror)], fmt='%1.2f'  )
 
 
-	np.savetxt(fname+'/optimal_percentile_para.txt', [optimal_para, para_5thperc, para_95thperc] )
- 
-
-
-	#print(likehood_rep[1,:max_index], ' is optimal likelihood')
-
+	 
 
 
 	#stop()

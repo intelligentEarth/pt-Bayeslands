@@ -1225,7 +1225,7 @@ def main():
 
 	random.seed(time.time()) 
 
-	samples = 300  # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 10000  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 

@@ -38,21 +38,22 @@ from plotly.graph_objs import *
 from plotly.offline.offline import _plot_html
 plotly.offline.init_notebook_mode()
 
-def plotFunctions(fname, pos_likl, pos_rain, pos_erod, pos_tau_elev, pos_tau_erdp, pos_tau_erdppts, bins, rain_true_val, erod_true_val):
+def plotFunctions(fname, pos_likl, pos_rain, pos_erod, bins, t_val):
 	
 	burnin = 0.05 * len(pos_likl)  # use post burn in samples
 	pos_likl = pos_likl[int(burnin):,]
 	pos_erod = pos_erod[int(burnin):]
 	pos_rain = pos_rain[int(burnin):]
-	pos_tau_elev = pos_tau_elev[int(burnin):, ]
-	pos_tau_erdp = pos_tau_erdp[int(burnin):,]
-	pos_tau_erdppts = pos_tau_erdppts[int(burnin):,]
 
 	nb_bins= bins
 	slen = np.arange(0,len(pos_likl),1)
 	font = 9
 	width = 1
 
+	rain_true_val = np.asarray(t_val[0], dtype = float)
+	erod_true_val = np.asarray(t_val[1], dtype = float)
+	print 'r_t ', rain_true_val
+	print 'e_t ', erod_true_val 
 	######################################     RAIN      ################################
 
 	rainmin, rainmax = min(pos_rain), max(pos_rain)
@@ -71,10 +72,16 @@ def plotFunctions(fname, pos_likl, pos_rain, pos_erod, pos_tau_elev, pos_tau_erd
 	ax.set_title(' Rain Parameter', fontsize=  font+2)#, y=1.02)
 	
 	ax1 = fig.add_subplot(211)
-	#ax1.set_facecolor('#f2f2f3')
-	ax1.set_axis_bgcolor("white")
+	ax1.set_facecolor('#f2f2f3')
+	# ax1.set_axis_bgcolor("white")
 	n, rainbins, patches = ax1.hist(pos_rain, bins=nb_bins, alpha=0.5, facecolor='sandybrown', normed=False)	
-	ax1.axvline(rain_true_val)
+	
+	# ax1.axvline(rain_true_val)
+	color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
+	for count, v in enumerate(rain_true_val):
+			ax1.axvline(x=v, color='%s' %(color[count]), linestyle='dashed', linewidth=1) # comment when go real value is 
+
+
 	ax1.grid(True)
 	ax1.set_ylabel('Frequency',size= font+1)
 	ax1.set_xlabel('rain', size= font+1)
@@ -116,7 +123,13 @@ def plotFunctions(fname, pos_likl, pos_rain, pos_erod, pos_tau_elev, pos_tau_erd
 	ax1.set_facecolor('#f2f2f3')
 	# ax1.set_axis_bgcolor("white")
 	n, erodbins, patches = ax1.hist(pos_erod, bins=nb_bins, alpha=0.5, facecolor='sandybrown', normed=False)
-	ax1.axvline(erod_true_val)
+
+	# ax1.axvline(erod_true_val)
+	color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
+	for count, v in enumerate(erod_true_val):
+			ax1.axvline(x=v, color='%s' %(color[count]), linestyle='dashed', linewidth=1) # comment when go real value is 
+
+
 	ax1.grid(True)
 	ax1.set_ylabel('Frequency',size= font+1)
 	ax1.set_xlabel('erod', size= font+1)
@@ -158,24 +171,9 @@ def plotFunctions(fname, pos_likl, pos_rain, pos_erod, pos_tau_elev, pos_tau_erd
 	ax1.set_ylabel(r'Likelihood', size= font+1)
 	ax1.set_xlim([0,np.amax(slen)])
 	
-	tau_elevmin, tau_elevmax = min(pos_tau_elev), max(pos_tau_elev)
-	tau_elevspace = np.linspace(tau_elevmin,tau_elevmax,len(pos_tau_elev))
-	tau_elevm,tau_elevs = stats.norm.fit(pos_tau_elev)
-	pdf_tau_elev = stats.norm.pdf(tau_elevspace,tau_elevm,tau_elevs)
-	tau_elevmean=np.mean(pos_tau_elev)
-	tau_elevmedian=np.median(pos_tau_elev)
-
-	ax2 = fig.add_subplot(212)
-	ax2.set_facecolor('#f2f2f3')
-	# ax2.set_axis_bgcolor("white")
-	ax2.plot(slen,pos_tau_elev,linestyle='-', linewidth= width, color='k', label=None)
-	ax2.set_title(r'Trace of Tau sq',size= font+2)
-	ax2.set_xlabel('Samples',size= font+1)
-	ax2.set_ylabel(r'tau_elevq', size= font+1)
-	ax2.set_xlim([0,np.amax(slen)])
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.88)
-	plt.savefig('%slik_tau.png'% (fname), bbox_inches='tight', dpi=300, transparent=False)
+	plt.savefig('%slikl.png'% (fname), bbox_inches='tight', dpi=300, transparent=False)
 	plt.clf()
 
 	####################################      Joint    ################################
@@ -217,7 +215,7 @@ def plotFunctions(fname, pos_likl, pos_rain, pos_erod, pos_tau_elev, pos_tau_erd
 	fig = go.Figure(data=data, layout=layout)
 	graph = plotly.offline.plot(fig, auto_open = False, output_type = 'file', filename='%s/plots/plot_image_jointscatter.html' %(fname), validate=False)
 
-	####################################      Ratio      ####################################
+	# ####################################      Ratio      ####################################
 	
 	fig = plt.figure(figsize=(8,10))
 	ax = fig.add_subplot(111)
@@ -234,11 +232,49 @@ def plotFunctions(fname, pos_likl, pos_rain, pos_erod, pos_tau_elev, pos_tau_erd
 	ax1.set_title(r'Ratio',size= font+2)
 	ax1.set_xlabel('Ratio',size= font+1)
 	ax1.set_ylabel(r'Likelihood', size= font+1)
-	ax1.set_xlim([0,np.amax(ratio)])
+	# ax1.set_xlim([0,np.amax(ratio)])
 	fig.tight_layout()
 	fig.subplots_adjust(top=0.88)
 	plt.savefig('%sratio.png'% (fname), bbox_inches='tight', dpi=300, transparent=False)
 	plt.clf()
+
+def plotLiklSurf(fname, pos_likl, pos_rain, pos_erod):
+	font = 9
+	width = 1
+
+	fig = plt.figure(figsize=(15,15))
+	ax = fig.add_subplot(111)
+	ax.spines['top'].set_color('none')
+	ax.spines['bottom'].set_color('none')
+	ax.spines['left'].set_color('none')
+	ax.spines['right'].set_color('none')
+	ax.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
+	ax.set_title(' Likelihood', fontsize=  font+2)#, y=1.02)
+	
+	ax1 = fig.add_subplot(211, projection = '3d')
+	ax1.set_facecolor('#f2f2f3')
+	X = pos_rain
+	Y = pos_erod
+
+	R = X/Y
+
+	X, Y = np.meshgrid(X, Y)
+	Z = pos_likl
+
+	print 'X shape ', X.shape, 'Y shape ', Y.shape, 'Z shape ', Z.shape
+
+	surf = ax1.plot_surface(X,Y,Z, cmap = cm.coolwarm, linewidth= 0, antialiased = False)
+	ax1.set_zlim(Z.min(), Z.max())
+	ax1.zaxis.set_major_locator(LinearLocator(10))
+	ax1.zaxis.set_major_formatter(FormatStrFormatter('%.05f'))
+	# Add a color bar which maps values to colors.
+
+	ax2 = fig.add_subplot(212)
+	
+
+	fig.colorbar(surf, shrink=0.5, aspect=5)
+	plt.savefig('%s/plot.png'% (fname), bbox_inches='tight', dpi=300, transparent=False)
+	plt.show()
 
 def covarMat (fname, pos_rain, pos_erod):
 	c = np.column_stack((rain_,erod_))
@@ -263,7 +299,7 @@ def covarMat (fname, pos_rain, pos_erod):
 
 def main():
 	functionality = input("Would you like to: \n 1) Plot Posterior Histogram for Params\n 2) Calculate Covariance mat for Params")
-	choice = input("Please choose a Badlands example to apply it to:\n 1) crater_fast\n 2) crater\n 3) etopo_fast\n 4) etopo\n 5) delta\n")
+	choice = input("Please choose a Badlands example to apply it to:\n 1) crater_fast\n 2) crater\n 3) etopo_fast\n 4) etopo\n")
 	directory = ""
 
 	if choice == 1:
@@ -282,64 +318,52 @@ def main():
 		directory = 'Examples/etopo'
 		rain_true_val = 1.5
 		erod_true_val = 5.e-6
-	elif choice == 5:
-		directory = 'Examples/delta'
-		rain_true_val = 1.5
-		erod_true_val = 5.e-5
+
 
 	run_nb = input('Please enter the folder number for Experiment i.e. mcmcresults_% ')
-
 	fname = '%s/mcmcresults_%s/' % (directory,run_nb)
-	
+	exp_data = '%s/mcmcresults_%s/exp_data.txt' % (directory,run_nb)
 	filename_list = []
-	filename_list.append('%s/mcmcresults_%s/accept_likl.txt' % (directory,run_nb))
-	filename_list.append('%s/mcmcresults_%s/accept_rain.txt' % (directory,run_nb))
-	filename_list.append('%s/mcmcresults_%s/accept_erod.txt' % (directory,run_nb))
-	filename_list.append('%s/mcmcresults_%s/accept_tau_elev.txt' % (directory,run_nb))
-	filename_list.append('%s/mcmcresults_%s/accept_tau_erdp.txt' % (directory,run_nb))
-	filename_list.append('%s/mcmcresults_%s/accept_tau_erdppts.txt' % (directory,run_nb))
-
-	likl = rain = erod = tau_elev = tau_erdp = tau_erdppts = []
+	filename_list.append(exp_data)
+	
+	rain = []
+	erod = []
+	likl = []
 
 	for list_name in filename_list:
 		with open(list_name) as f:
-			next(f)
-			next(f)
-			for line in f:
-				words = line.split()
-				error = words[2]
-				lname =  list_name[-8:-4]
-				if lname == 'likl':
-					likl.append(error)
-				elif lname == 'rain':
-					rain.append(error)
-				elif lname == 'erod':
-					erod.append(error)
-				elif lname == 'elev':
-					tau_elev.append(error)
-				elif lname == 'erdp':
-					tau_erdp.append(error)	
-				elif lname == 'ppts':
-					tau_erdppts.append(error)	
+			for count, line in enumerate(f):
+				# print count,' ', line
+				term = line.split()
+				# print 'term', term
+				rain.append(term[0])
+				# print 'rain', rain
+				erod.append(term[1])
+				# print 'erod', erod
+				likl.append(term[2])
+				# print 'likl', likl
 
 	print 'length of likl', len(likl), ' rain', len(rain), ' erod', len(erod)
 
-	likl_ = np.asarray(likl, dtype = float)
 	rain_ = np.asarray(rain, dtype = float)
 	erod_ = np.asarray(erod, dtype = float)
-	tau_elev_ = np.asarray(tau_elev, dtype = float)
-	tau_erdp_ = np.asarray(tau_erdp, dtype = float)
-	tau_erdppts_ = np.asarray(tau_erdppts, dtype = float)
+	likl_ = np.asarray(likl, dtype = float)
 
+	t_val_ = np.loadtxt('%s/data/true_values.txt' % (directory))
 
 	if functionality == 1:
 		bins= input("Please enter Bin Size for Histogram (e.g. 10, 20 ,30 ...")
-		plotFunctions(fname, likl_, rain_, erod_, tau_elev_, tau_erdp_, tau_erdppts_, bins, rain_true_val, erod_true_val)
+		plotFunctions(fname, likl_, rain_, erod_, bins, t_val_)
+		# plotFunctions(fname, likl_, rain_, erod_, bins, rain_true_val, erod_true_val)
 		print '\nFinished plotting'
 
 	elif functionality ==2:
 		covarMat(fname, rain_, erod_)
 		print '\n Covariance Matrix has been created'
+
+	elif functionality ==3:
+		fname = '%s/liklSurface_%s/' % (directory,run_nb)
+
 	
 if __name__ == "__main__": main()
 

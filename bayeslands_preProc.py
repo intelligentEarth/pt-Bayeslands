@@ -27,8 +27,8 @@ def convertInitialTXT_CSV(directory,fname, res_fact, reduce_factor):
 	
 	arr = np.loadtxt(fname)
 	with open('%s/data/convertedInitial_low.csv' %(directory), 'a') as the_file:
-		for i in range(0, arr.shape[0]-2, reduce_factor):
-			for j in range(0, arr.shape[1]-2, reduce_factor):
+		for i in xrange(0, arr.shape[0]-2, reduce_factor):
+			for j in xrange(0, arr.shape[1]-2, reduce_factor):
 				x_c = i*res_fact
 				y_c = j*res_fact
 
@@ -95,15 +95,15 @@ def main():
 	directory = ""
 
 	if choice == 1:
-		directory = 'Examples/crater_fast'
+		directory = 'Examples/crater_fast_3030'
 	elif choice ==2:
 		directory = 'Examples/crater'
 	elif choice ==3:
 		directory = 'Examples/etopo_fast'
 	elif choice ==4:
 		directory = 'Examples/etopo'
-	elif choice ==5:
-		directory = 'Examples/mountain'
+	# elif choice ==5:
+	# 	directory = 'Examples/mountain'
 	
 	if functionality == 1:
 			tstart = time.clock()
@@ -120,7 +120,7 @@ def main():
 			tstart = time.clock()
 			reduce_factor = input("What should the reduction factor be?")
 			res_fact = input("Resolution Factor")
-			convertInitialTXT_CSV(directory,'%s/data/initial_elev.txt' %(directory), res_fact = res_fact, reduce_factor = 1)
+			convertInitialTXT_CSV(directory,'%s/data/initial_elev.txt' %(directory), res_fact = res_fact, reduce_factor = reduce_factor)
 			print 'Task completed in (s):',time.clock()-tstart
 
 	elif functionality == 3:

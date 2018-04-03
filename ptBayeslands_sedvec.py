@@ -34,6 +34,10 @@ from io import StringIO
 from cycler import cycler
 import os
 
+
+import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib as mpl
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
@@ -100,8 +104,9 @@ class ptReplica(multiprocessing.Process):
 		#self.real_erodep =  real_erodep  # this is 3D eroddep - this will barely be used in likelihood - so there is no need for it
 		self.erodep_coords = erodep_coords
 		self.real_elev = real_elev
+ 
 
-		self.eta_stepratio = 0.05
+		self.runninghisto = True  # if you want to have histograms of the chains during runtime in pos_variables folder NB: this has issues in Artimis
 
 
 		self.burn_in = burn_in
@@ -187,57 +192,15 @@ class ptReplica(multiprocessing.Process):
 
 		return elev_vec, erodep_vec, erodep_pts_vec
 
-
-	def interpolateArray(self, coords=None, z=None, dz=None):
-		"""
-		Interpolate the irregular spaced dataset from badlands on a regular grid.
-		"""
-		x, y = np.hsplit(coords, 2)
-		dx = (x[1]-x[0])[0]
-
-		nx = int((x.max() - x.min())/dx+1)
-		ny = int((y.max() - y.min())/dx+1)
-		xi = np.linspace(x.min(), x.max(), nx)
-		yi = np.linspace(y.min(), y.max(), ny)
-
-		xi, yi = np.meshgrid(xi, yi)
-		xyi = np.dstack([xi.flatten(), yi.flatten()])[0]
-		XY = np.column_stack((x,y))
-
-		tree = cKDTree(XY)
-		distances, indices = tree.query(xyi, k=3)
-		if len(z[indices].shape) == 3:
-			z_vals = z[indices][:,:,0]
-			dz_vals = dz[indices][:,:,0]
-		else:
-			z_vals = z[indices]
-			dz_vals = dz[indices]
-
-		zi = np.average(z_vals,weights=(1./distances), axis=1)
-		dzi = np.average(dz_vals,weights=(1./distances), axis=1)
-		onIDs = np.where(distances[:,0] == 0)[0]
-		if len(onIDs) > 0:
-			zi[onIDs] = z[indices[onIDs,0]]
-			dzi[onIDs] = dz[indices[onIDs,0]]
-		zreg = np.reshape(zi,(ny,nx))
-		dzreg = np.reshape(dzi,(ny,nx))
-
-		return zreg,dzreg
-
-
 	def likelihood_func(self,input_vector ):
 
 		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector )
 
-
-		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size
+		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size 
 
 		tau_erodep_pts =  (np.sum(np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts)))/self.real_erodep_pts.size
- 
-		
-	
+ 	
 		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq 
-
 
 		
 		if self.check_likehood_sed  == True:
@@ -247,7 +210,7 @@ class ptReplica(multiprocessing.Process):
 		else:
 			likelihood = np.sum(likelihood_elev)
 
-		return [likelihood *(1.0/self.temperature), pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec]
+		return [likelihood *(1.0/self.temperature), pred_elev_vec,   pred_erodep_pts_vec]
 
  
 
@@ -288,7 +251,7 @@ class ptReplica(multiprocessing.Process):
  
 		#calc initial likelihood with initial parameters
  
-		[likelihood, predicted_elev, pred_erodep, pred_erodep_pts] = self.likelihood_func(v_current )
+		[likelihood, predicted_elev,  pred_erodep_pts] = self.likelihood_func(v_current )
 
 		print('\tinitial likelihood:', likelihood)
  
@@ -307,18 +270,22 @@ class ptReplica(multiprocessing.Process):
 
 
 		prev_accepted_elev = deepcopy(predicted_elev)
-		prev_acpt_erodep = deepcopy(pred_erodep)
+		 
 		prev_acpt_erodep_pts = deepcopy(pred_erodep_pts) 
 
 
 		sum_elev = deepcopy(predicted_elev)
-		sum_erodep = deepcopy(pred_erodep)  # Creating storage for data
+		  # Creating storage for data
 		sum_erodep_pts = deepcopy(pred_erodep_pts)
+
 
 
  
 
 		print('time to change')
+
+
+		burnsamples = int(samples*self.burn_in)
 
 		#---------------------------------------
 		#now, create memory to save all the accepted   proposals of rain, erod, etc etc, plus likelihood
@@ -332,6 +299,10 @@ class ptReplica(multiprocessing.Process):
 		ymid = int(self.real_elev.shape[1]/2 ) #   cut the slice in the middle 
 		xmid = int(self.real_elev.shape[0]/2)
 
+		list_erodep  = np.zeros((samples,pred_erodep_pts[self.simtime].size))
+
+		list_erodep_time  = np.zeros((samples , self.sim_interval.size , pred_erodep_pts[self.simtime].size))
+
 
 
 		start = time.time() 
@@ -340,7 +311,6 @@ class ptReplica(multiprocessing.Process):
 
 		num_div = 0 
 
-		burnsamples = int(samples*self.burn_in)
 		#save
 
 		with file(('%s/description.txt' % (self.filename)),'a') as outfile:
@@ -369,9 +339,10 @@ class ptReplica(multiprocessing.Process):
 
 			print(v_proposal)  
 			# Passing paramters to calculate likelihood and rmse with new tau
-			[likelihood_proposal, predicted_elev, predicted_erodep,pred_erodep_pts] = self.likelihood_func(v_proposal)
+			[likelihood_proposal, predicted_elev,  pred_erodep_pts] = self.likelihood_func(v_proposal)
 
 			final_predtopo= predicted_elev[self.simtime]
+			pred_erodep = pred_erodep_pts[self.simtime]
  
  
 			# Difference in likelihood from previous accepted proposal
@@ -383,9 +354,6 @@ class ptReplica(multiprocessing.Process):
 				mh_prob = 1
 
 			u = random.uniform(0,1)
-
-			
-
 
 
 			accept_list[i+1] = num_accepted
@@ -405,26 +373,29 @@ class ptReplica(multiprocessing.Process):
 				 
 				v_current = v_proposal
   
-				pos_param[i+1,:] = v_proposal
+				pos_param[i+1,:] = v_current # features rain, erodibility and others  (random walks is only done for this vector)
 
-				likeh_list[i + 1,1]=likelihood  
+				likeh_list[i + 1,1]=likelihood  # contains  all proposal liklihood (accepted and rejected ones)
 
 				list_yslicepred[i+1,:] =  final_predtopo[:, ymid] # slice taken at mid of topography along y axis  
 				list_xslicepred[i+1,:]=   final_predtopo[xmid, :]  # slice taken at mid of topography along x axis 
 
-			 
+				list_erodep[i+1,:] = pred_erodep
 
-				num_accepted = num_accepted + 1
+				for x in range(self.sim_interval.size): 
+					list_erodep_time[i+1,x, :] = pred_erodep_pts[self.sim_interval[x]]
 
+
+
+
+				num_accepted = num_accepted + 1 
 
 				prev_accepted_elev.update(predicted_elev)
 
-				if i>burnsamples:
+				if i>burnsamples: 
+					
 					for k, v in prev_accepted_elev.items():
-						sum_elev[k] += v
-
-					for k, v in pred_erodep.items():
-						sum_erodep[k] += v
+						sum_elev[k] += v 
 
 					for k, v in pred_erodep_pts.items():
 						sum_erodep_pts[k] += v
@@ -439,6 +410,10 @@ class ptReplica(multiprocessing.Process):
 				list_yslicepred[i+1,:] =  list_yslicepred[i,:] 
 				list_xslicepred[i+1,:]=   list_xslicepred[i,:]
 
+				list_erodep[i+1,:] = list_erodep[i,:]
+ 
+				list_erodep_time[i+1,:, :] = list_erodep_time[i,:, :]
+
 			
  
  
@@ -447,11 +422,11 @@ class ptReplica(multiprocessing.Process):
 
 					print('saving sum ele')
 
+
+
 					for k, v in prev_accepted_elev.items():
 						sum_elev[k] += v
-
-					for k, v in prev_acpt_erodep.items():
-						sum_erodep[k] += v
+ 
 
 					for k, v in prev_acpt_erodep_pts.items():
 						sum_erodep_pts[k] += v
@@ -464,7 +439,7 @@ class ptReplica(multiprocessing.Process):
 
 				print(' CHECK if can SWAP -----------------------------------------------------------------------------------------------------> ')
 
-				if i> burnsamples:
+				if i> burnsamples and self.runninghisto == True:
 					hist, bin_edges = np.histogram(pos_param[burnsamples:i,0], density=True)
 					plt.hist(pos_param[burnsamples:i,0], bins='auto')  # arguments are passed to np.histogram
 					plt.title("Parameter 1 Histogram")
@@ -508,15 +483,8 @@ class ptReplica(multiprocessing.Process):
 					except:
 						print ('error')
 
-		
-		end = time.time()
-		total_time = end - start 
-
-
-		print ('Time elapsed:', total_time)
-		accepted_count =  len(count_list)
-		print (accepted_count, ' number accepted')
-		print (len(count_list) / (samples * 0.01), '% was accepted')
+		 
+		accepted_count =  len(count_list) 
 		accept_ratio = accepted_count / (samples * 1.0) * 100
 
 
@@ -533,6 +501,10 @@ class ptReplica(multiprocessing.Process):
 		file_name = self.filename+'/posterior/pos_parameters/chain_'+ str(self.temperature)+ '.txt'
 		np.savetxt(file_name,pos_param )
 
+
+		file_name = self.filename+'/posterior/predicted_erodep/chain_erodep_'+ str(self.temperature)+ '.txt'
+		np.savetxt(file_name, list_erodep )
+
 		file_name = self.filename+'/posterior/predicted_topo/chain_xslice_'+ str(self.temperature)+ '.txt'
 		np.savetxt(file_name, list_xslicepred )
 
@@ -547,6 +519,12 @@ class ptReplica(multiprocessing.Process):
 
 		file_name = self.filename + '/posterior/accept_list/chain_' + str(self.temperature) + '.txt'
 		np.savetxt(file_name, accept_list, fmt='%1.2f')
+ 
+
+		for s in range(self.sim_interval.size):  
+			file_name = self.filename + '/posterior/predicted_erodep/chain_' + str(self.sim_interval[s]) + '_' + str(self.temperature) + '.txt'
+			np.savetxt(file_name, list_erodep_time[:,s, :] , fmt='%.2f')
+ 
 
 
 		for k, v in sum_elev.items():
@@ -559,10 +537,9 @@ class ptReplica(multiprocessing.Process):
 			file_name = self.filename + '/posterior/predicted_topo/chain_' + str(k) + '_' + str(self.temperature) + '.txt'
 			np.savetxt(file_name, mean_pred_elevation, fmt='%.2f')
 
-			file_name = self.filename + '/posterior/predicted_erodep/chain_' + str(k) + '_' + str(self.temperature) + '.txt'
-			np.savetxt(file_name, mean_pred_erodep_pnts, fmt='%.2f')
-
-		# signal main process to resume
+			#file_name = self.filename + '/posterior/predicted_erodep/chain_' + str(k) + '_' + str(self.temperature) + '.txt'
+			#np.savetxt(file_name, mean_pred_erodep_pnts, fmt='%.2f')
+ 
 		self.signal_main.set()
 
 
@@ -771,11 +748,12 @@ class ParallelTempering:
 		print(number_exchange, 'num_exchange, process ended')
 
 
-		pos_param, likelihood_rep, accept_list, pred_topo, combined_erodep, accept, pred_topofinal, list_xslice, list_yslice = self.show_results('chain_')
+		pos_param, likelihood_rep, accept_list, pred_topo, pos_erodep, combined_erodep, accept, pred_topofinal, list_xslice, list_yslice = self.show_results('chain_')
 
-		sqerror= self.mean_sqerror(combined_erodep, pred_topofinal) 
+		mean_erodep = pos_erodep.mean(axis=1)
 
-		print(pos_param, 'pos +++')
+		sqerror= self.mean_sqerror(mean_erodep, pred_topofinal) 
+ 
 
 		self.view_crosssection_uncertainity(list_xslice, list_yslice)
 
@@ -815,7 +793,7 @@ class ParallelTempering:
 			
 			
 
-		return (pos_param,likelihood_rep, accept_list,combined_erodep,   sqerror )
+		return (pos_param,likelihood_rep, accept_list, pos_erodep, combined_erodep,  sqerror )
 
 	def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
 
@@ -884,11 +862,6 @@ class ParallelTempering:
 		plt.savefig(self.folder+'/y_xmid_opt.png') 
 		plt.clf()
 
-
-
- 
-
-		 
 		 
 
 	def mean_sqerror(self,  pred_erodep, pred_elev ):
@@ -922,7 +895,20 @@ class ParallelTempering:
 		combined_topo = np.zeros(( self.sim_interval.size, topo.shape[0], topo.shape[1]))
 
 		replica_erodep_pts = np.zeros(( self.num_chains, self.real_erodep_pts.shape[0] ))
-		combined_erodep = np.zeros((self.real_erodep_pts.shape[0] ))
+
+
+		list_erodep = np.zeros(( self.num_chains,  self.NumSamples - burnin, self.real_erodep_pts.shape[0] )) # this will become 4D vec when you will consider time variant erodep
+
+
+		combined_erodep = np.zeros((self.sim_interval.size, self.num_chains, self.NumSamples - burnin, self.real_erodep_pts.shape[0] ))
+
+		timespan_erodep = np.zeros((self.sim_interval.size,  (self.NumSamples - burnin) * self.num_chains, self.real_erodep_pts.shape[0] ))
+
+
+
+		#file_name = self.filename+'/posterior/predicted_topo/chain_erodep_'+ str(self.temperature)+ '.txt'
+		#np.savetxt(file_name, list_erodep )
+
  
 
  
@@ -932,6 +918,11 @@ class ParallelTempering:
 			file_name = self.folder + '/posterior/pos_parameters/'+filename + str(self.tempratures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			pos_param[i, :, :] = dat[burnin:,:]
+
+
+			file_name = self.folder + '/posterior/predicted_erodep/chain_erodep_'+  str(self.tempratures[i]) + '.txt'
+			dat = np.loadtxt(file_name) 
+			list_erodep[i, :, :] = dat[burnin:,:]
 
 			file_name = self.folder + '/posterior/predicted_topo/chain_xslice_'+  str(self.tempratures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
@@ -966,18 +957,24 @@ class ParallelTempering:
 				dat_topo = np.loadtxt(file_name)
 				replica_topo[j,i,:,:] = dat_topo
 
+				file_name = self.folder+'/posterior/predicted_erodep/chain_'+str(self.sim_interval[j])+'_'+ str(self.tempratures[i])+ '.txt'
+				dat_erodep = np.loadtxt(file_name)
+				combined_erodep[j,i,:,:] = dat_erodep[burnin:,:]
 
 
-			file_name = self.folder + '/posterior/predicted_erodep/chain_' + str(self.sim_interval[-1]) + '_' + str(self.tempratures[i]) + '.txt' # access last sed
-			data_erodep = np.loadtxt(file_name)
-			print(data_erodep)
-				 
-			replica_erodep_pts[i, :] = data_erodep
+
+
+			#file_name = self.folder + '/posterior/predicted_erodep/chain_' + str(self.sim_interval[-1]) + '_' + str(self.tempratures[i]) + '.txt' # access last sed
+			#data_erodep = np.loadtxt(file_name)
+		 		 
+			#replica_erodep_pts[i, :] = data_erodep
+
+		print(combined_erodep)
 
  
 
-		posterior = pos_param.transpose(2,0,1).reshape(self.num_param,-1) 
- 
+		posterior = pos_param.transpose(2,0,1).reshape(self.num_param,-1)  
+		pos_erodep = list_erodep.transpose(2,0,1).reshape(self.real_erodep_pts.shape[0],-1)  
 		xslice = list_xslice.transpose(2,0,1).reshape(self.real_elev.shape[1],-1) 
 		yslice = list_yslice.transpose(2,0,1).reshape(self.real_elev.shape[0],-1)
  
@@ -989,9 +986,16 @@ class ParallelTempering:
 			for i in range(self.num_chains):
 				combined_topo[j,:,:] += replica_topo[j,i,:,:]  
 			combined_topo[j,:,:] = combined_topo[j,:,:]/self.num_chains
+
+			dx = combined_erodep[j,:,:,:].transpose(2,0,1).reshape(self.real_erodep_pts.shape[0],-1)
+
+			timespan_erodep[j,:,:] = dx.T
+
+			 
+
  
 
-		combined_erodep = np.mean(replica_erodep_pts, axis = 0) 
+		#combined_erodep = np.mean(replica_erodep_pts, axis = 0) 
 
 		accept = np.sum(accept_percent)/self.num_chains
 
@@ -1000,6 +1004,8 @@ class ParallelTempering:
  
 
 		np.savetxt(self.folder + '/pos_param.txt', posterior.T)
+
+		np.savetxt(self.folder + '/pos_erodep.txt', pos_erodep.T)
  
 
 		np.savetxt(self.folder + '/likelihood.txt', likelihood_vec.T, fmt='%1.5f')
@@ -1009,7 +1015,7 @@ class ParallelTempering:
 
 		np.savetxt(self.folder + '/acceptpercent.txt', [accept], fmt='%1.2f')
 
-		return posterior, likelihood_vec.T, accept_list, combined_topo, combined_erodep, accept, pred_topofinal, xslice, yslice
+		return posterior, likelihood_vec.T, accept_list, combined_topo, pos_erodep, timespan_erodep, accept, pred_topofinal, xslice, yslice
 
 
 	def find_nearest(self, array,value): # just to find nearest value of a percentile (5th or 9th from pos likelihood)
@@ -1220,25 +1226,72 @@ def make_directory (directory):
 		os.makedirs(directory)
 
 
+def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_interval, fname):
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+
+
+
+	index = np.arange(groundtruth_erodep_pts.size) 
+
+
+	ground_erodepstd = np.zeros(groundtruth_erodep_pts.size) 
+	opacity = 0.8
+ 
+	width = 0.35                      # the width of the bars
+	
+	## the bars
+	rects1 = ax.bar(index, erodep_mean, width,
+                color='blue',
+                yerr=erodep_std,
+                error_kw=dict(elinewidth=2,ecolor='red'))
+
+	rects2 = ax.bar(index+width, groundtruth_erodep_pts, width, color='green', 
+                yerr=ground_erodepstd,
+                error_kw=dict(elinewidth=2,ecolor='red') )
+
+	# axes and labels
+	#ax.set_xlim(-width,len(ind)+width)
+	#ax.set_ylim(0,0.2)
+	ax.set_ylabel('Height in meters')
+	ax.set_xlabel('Selected Coordinates')
+	ax.set_title('Erosion Deposition')
+
+	xTickMarks = [str(i) for i in range(1,21)]
+	ax.set_xticks(index+width)
+	xtickNames = ax.set_xticklabels(xTickMarks)
+	plt.setp(xtickNames, rotation=0, fontsize=8)
+
+	## add a legend
+	plotlegend = ax.legend( (rects1[0], rects2[0]), ('Predicted  ', ' Ground-truth ') )
+	 
+	plt.savefig(fname +'/pos_erodep_'+str( sim_interval) +'_.png')
+	plt.clf()    
+
+	 
+
+
+
 
 def main():
 
 	random.seed(time.time()) 
 
-	samples = 10000  # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 1000  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 3
-  
+	problem = 1
+
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
 		xmlinput = problemfolder + 'crater.xml'
 		print('xmlinput', xmlinput)
 		simtime = 15000 
 
-		resolu_factor =  20 # this helps visualize the surface distance in meters 
+		resolu_factor =  200 # this helps visualize the surface distance in meters 
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1253,8 +1306,8 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
@@ -1272,14 +1325,14 @@ def main():
  
 
  
-		erodep_coords = np.array([[60, 60], [72, 66], [85, 73], [90, 75]])  # need to hand pick given your problem
+		erodep_coords = np.array([[60,60],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69],[79,91],[96,77],[42,49]]) # need to hand pick given your problem
 
 	elif problem == 2:
 		problemfolder = 'Examples/crater/'
 		xmlinput = problemfolder + 'crater.xml'
 		simtime = 50000
 
-		resolu_factor =  20
+		resolu_factor =  200
 
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
@@ -1311,7 +1364,7 @@ def main():
 		print(vec_parameters) 
 
 
-		erodep_coords = np.array([[60, 60], [72, 66], [85, 73], [90, 75]])  # need to hand pick given your problem
+		erodep_coords =  np.array([[60,60],[52,67],[74,76],[62,45],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69]]) # need to hand pick given your problem
 
 	elif problem == 3:
 		problemfolder = 'Examples/etopo_fast/'
@@ -1347,7 +1400,7 @@ def main():
 
 		print(vec_parameters) 
 
-		erodep_coords = np.array([[42, 10], [39, 8], [75, 51], [59, 13], [40,5], [6,20], [14,66], [4,40],[72,73],[46,64]])  # need to hand pick given your problem
+		erodep_coords =  np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]]) # need to hand pick given your problem
 
 
 
@@ -1368,8 +1421,8 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-6, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-6, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
@@ -1384,7 +1437,7 @@ def main():
 
 		print(vec_parameters) 
 		
-		erodep_coords = np.array([[42, 10], [39, 8], [75, 51], [59, 13], [40,5], [6,20], [14,66], [4,40],[72,73],[46,64]])  # need to hand pick given your problem
+		erodep_coords = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])  # need to hand pick given your problem
 
 
 	elif problem == 5:
@@ -1430,7 +1483,7 @@ def main():
 	# PT is a multicore implementation must num_chains >= 2
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
-	num_chains = 10
+	num_chains = 4
 	swap_ratio = 0.1    #adapt these 
 	burn_in =0.1 
 	num_successive_topo = 4
@@ -1440,6 +1493,7 @@ def main():
 
 	#parameters for Parallel Tempering
 	maxtemp = int(num_chains * 5)/2
+	
 	swap_interval =   int(swap_ratio * (samples/num_chains)) #how ofen you swap neighbours
 	print(swap_interval, ' swap')
 
@@ -1454,7 +1508,7 @@ def main():
 	#-------------------------------------------------------------------------------------
  
 
-	pt = ParallelTempering(vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts, erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
+	pt = ParallelTempering(vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts[-1,:], erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
 	#-------------------------------------------------------------------------------------
 	# intialize the MCMC chains
 	#-------------------------------------------------------------------------------------
@@ -1465,7 +1519,7 @@ def main():
 	#-------------------------------------------------------------------------------------
 	#run the chains in a sequence in ascending order
 	#-------------------------------------------------------------------------------------
-	pos_param,likehood_rep, accept_list, combined_erodep, sqerror  = pt.run_chains()
+	pos_param,likehood_rep, accept_list, pos_erodep, combined_erodep, sqerror  = pt.run_chains()
 	print('sucessfully sampled')
 	#print(pos_rain)
 	#print(pos_erouud)
@@ -1483,31 +1537,27 @@ def main():
 	plt.savefig( fname+'/accept_list.png')
 	plt.clf()
 
-	print(combined_erodep) 
+	print(combined_erodep)
 
-	fig, ax = plt.subplots()
-	index = np.arange(groundtruth_erodep_pts.size)
-	bar_width = 0.35
-	opacity = 0.8
- 
-	rects1 = plt.bar(index, groundtruth_erodep_pts, bar_width,
-				 alpha=opacity,
-				 color='b',
-				 label='Real')
- 
-	rects2 = plt.bar(index + bar_width, combined_erodep, bar_width,
-				 alpha=opacity,
-				 color='g',
-				 label='Predicted with uncertainity')
- 
-	plt.xlabel('Selected Coordinates')
-	plt.ylabel('Height in meters')
-	plt.title('Erosion Deposition') 
-	plt.legend() 
-	plt.tight_layout() 
-	plt.savefig(fname + '/pos_erodep_pts.png')
-	plt.clf()
+	#pos_ed = zeros((combined_erodep.shape[1], combined_erodep.shape[2])) 
 
+	for i in range(sim_interval.size):
+		pos_ed  = combined_erodep[i, :, :] 
+
+		print(pos_ed) 
+		erodep_mean = pos_ed.mean(axis=0)  
+		erodep_std = pos_ed.std(axis=0) 
+		print(erodep_std, ' std')   
+		print(erodep_mean, '  mean')
+		plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts[i,:], sim_interval[i], fname)
+
+	#erodep_5th = np.percentile(pos_erodep, 5, axis=1)
+	#erodep_95th= np.percentile(pos_erodep, 95, axis=1)
+
+
+
+
+	
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
 	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60, sqerror, np.sqrt(sqerror)], fmt='%1.2f'  )
 

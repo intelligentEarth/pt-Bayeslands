@@ -77,7 +77,7 @@ def interpolateArray(coords=None, z=None, dz=None):
 	dzreg = np.reshape(dzi,(ny,nx))
 	return zreg,dzreg
 
-def topoGenerator(directory,inputname, outputname, rain, erodibility, m, n, etime, erdp_coords):
+def topoGenerator(directory,inputname, outputname, rain, erodibility, m, n, etime, erdp_coords, final_noise):
 	"""
 		
 	"""
@@ -99,16 +99,44 @@ def topoGenerator(directory,inputname, outputname, rain, erodibility, m, n, etim
 	
 	elev,erdp = interpolateArray(model.FVmesh.node_coords[:, :2],model.elevation,model.cumdiff)
 
-	#########
+	###########################
 	erdp_pts = np.zeros((erdp_coords.shape[0]))
 
 	for count, val in enumerate(erdp_coords):
 		erdp_pts[count] = erdp[val[0], val[1]]
-	##########
+	###########################
 
-	elev_mat=np.matrix(elev)
-	erdp_mat=np.matrix(erdp)
-	erdp_pts_mat = np.matrix(erdp_pts)
+
+	############# Adding Noise
+	tausq_elev = elev.max()* 0.01
+	tausq_erdp = erdp.max()* 0.01
+	tausq_erdp_pts = erdp_pts.max()* 0.01
+	
+	# print tausq_elev, tausq_erdp, tausq_erdp_pts
+	# print 'elev.size', elev.size
+	elev_noise = np.random.normal(0, np.sqrt(tausq_elev), elev.size)
+	elev_noise = np.reshape(elev_noise,(elev.shape[0],elev.shape[1]))	
+	erdp_noise = np.random.normal(0, np.sqrt(tausq_erdp), erdp.size)
+	erdp_noise = np.reshape(erdp_noise,(erdp.shape[0],erdp.shape[1]))	
+	erdp_pts_noise = np.random.normal(0, np.sqrt(tausq_erdp_pts), erdp_pts.size)
+	erdp_pts_noise = np.reshape(erdp_pts_noise,(erdp_pts.shape))
+	# print 'noise', noise
+	# print 'noise shape now ', noise.shape
+
+	#############
+	
+	elev_=np.matrix(elev)
+	erdp_=np.matrix(erdp)
+	erdp_pts_ = np.matrix(erdp_pts)
+
+	if final_noise:
+		elev_mat=np.add(elev_, elev_noise)
+		erdp_mat=np.add(erdp_, erdp_noise)
+		erdp_pts_mat = np.add(erdp_pts_, erdp_pts_noise)
+	else:
+		elev_mat = elev_
+		erdp_mat = erdp_
+		erdp_pts_mat = erdp_pts_
 
 	np.savetxt('%s/data/%s_elev.txt' %(directory, outputname),elev_mat,fmt='%.5f')
 	np.savetxt('%s/data/%s_erdp.txt' %(directory,outputname),erdp_mat,fmt='%.5f')
@@ -131,7 +159,9 @@ def visualiseInput(directory,inputname, outputname, rain, erodibility, m, n, eti
 	rreal = rain
 	ereal = erodibility
 
-	topoGenerator(directory,inputname, outputname, rreal, ereal, m, n, etime, erdp_coords)
+	final_noise = False
+
+	topoGenerator(directory,inputname, outputname, rreal, ereal, m, n, etime, erdp_coords,final_noise)
 	
 	elev = np.loadtxt('%s/data/%s_elev.txt' %(directory,outputname))
 	erdp = np.loadtxt('%s/data/%s_erdp.txt' %(directory,outputname))
@@ -293,20 +323,23 @@ def main():
 	"""
 	
 	"""
-	choice = input("Please choose a Badlands example to create an Initial and Final Topography for:\n 1) crater_fast\n 2) crater\n 3) etopo_fast\n 4) etopo\n 5) delta\n")
+	choice = input("Please choose a Badlands example to create an Initial and Final Topography for:\n 1) crater_fast\n 2) crater\n 3) etopo_fast\n 4) etopo\n")
 	directory = ""
-	erdp_coords_crater = np.array([ [60,60], [72,66], [85,73], [90,75] ])
-	erdp_coords_etopo = np.array([[42, 10], [39, 8], [75, 51], [59, 13], [40,5], [6,20], [14,66], [4,40],[72,73],[46,64]])  # need to hand pick given your problem
 
-	erdp_coords_mountain = np.array([ [10,60], [30,30], [60,10], [80,75] ])
+	erdp_coords_crater = np.array([[60,60],[52,67],[74,76],[62,45],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69]])
+	erdp_coords_crater_fast = np.array([[60,60],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69],[79,91],[96,77],[42,49]])
+	erdp_coords_etopo = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])
+	erdp_coords_etopo_fast = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[68,40],[72,44]])
+	
+	final_noise = True
 
 	if choice == 1:
 		
 		tstart = time.clock()
 		
 		directory = 'Examples/crater_fast'
-		visualiseInput(directory,'%s/crater.xml' %(directory) ,'initial', 1.5 , 5.e-5, 0.5, 1, 0, erdp_coords_crater)
-		topoGenerator(directory,'%s/crater.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 15000, erdp_coords_crater)
+		visualiseInput(directory,'%s/crater.xml' %(directory) ,'initial', 1.5 , 5.e-5, 0.5, 1, 0, erdp_coords_crater_fast)
+		topoGenerator(directory,'%s/crater.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 15000, erdp_coords_crater,final_noise)
 		
 		print 'TopoGen for crater_fast completed in (s):',time.clock()-tstart
 		
@@ -316,7 +349,7 @@ def main():
 		
 		directory = 'Examples/crater'
 		visualiseInput(directory,'%s/crater.xml' %(directory) ,'initial', 1.5 , 5.e-5, 0.5, 1, 0, erdp_coords_crater)
-		topoGenerator(directory,'%s/crater.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 50000, erdp_coords_crater)
+		topoGenerator(directory,'%s/crater.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 50000, erdp_coords_crater,final_noise)
 		
 		print 'TopoGen for crater completed in (s):',time.clock()-tstart
 
@@ -325,8 +358,8 @@ def main():
 		tstart = time.clock()
 		
 		directory = 'Examples/etopo_fast'
-		visualiseInput(directory,'%s/etopo.xml' %(directory) ,'initial', 1.5 , 5.e-6, 0.5, 1, 0, erdp_coords_etopo)
-		topoGenerator(directory,'%s/etopo.xml' %(directory) , 'final', 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo)
+		visualiseInput(directory,'%s/etopo.xml' %(directory) ,'initial', 1.5 , 5.e-6, 0.5, 1, 0, erdp_coords_etopo_fast)
+		topoGenerator(directory,'%s/etopo.xml' %(directory) , 'final', 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo,final_noise)
 		
 		print 'TopoGen for etopo fast completed in (s):',time.clock()-tstart
 
@@ -336,18 +369,9 @@ def main():
 		
 		directory = 'Examples/etopo'
 		visualiseInput(directory,'%s/etopo.xml' %(directory) ,'initial', 1.5 , 5.e-6, 0.5, 1, 0, erdp_coords_etopo)
-		topoGenerator(directory,'%s/etopo.xml' %(directory) , 'final', 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo)
+		topoGenerator(directory,'%s/etopo.xml' %(directory) , 'final', 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo,final_noise)
 		
 		print 'TopoGen for etopo completed in (s):',time.clock()-tstart
 
-	elif choice == 5:
-
-		tstart = time.clock()
-		
-		directory = 'Examples/mountain'
-		visualiseInput(directory,'%s/mountain.xml' %(directory) ,'initial', 1.5 , 5.e-5, 0.5, 1, 0, erdp_coords_mountain)
-		topoGenerator(directory,'%s/mountain.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 500000, erdp_coords_mountain)
-		
-		print 'TopoGen for mountain completed in (s):',time.clock()-tstart
 
 if __name__ == "__main__": main()

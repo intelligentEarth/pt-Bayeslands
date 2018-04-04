@@ -1203,10 +1203,10 @@ class ParallelTempering:
 
 def mean_sqerror(  pred_erodep, pred_elev,  real_elev,  real_erodep_pts):
 		 
-		elev = np.sum(np.square(pred_elev -  real_elev))  / real_elev.size
-		sed =  np.sum(np.square(pred_erodep -  real_erodep_pts))/ real_erodep_pts.size 
+		elev = np.sqrt(np.sum(np.square(pred_elev -  real_elev))  / real_elev.size)
+		sed =  np.sqrt(np.sum(np.square(pred_erodep -  real_erodep_pts))/ real_erodep_pts.size )
 
-		return elev + sed
+		return elev + sed, sed
 
 
 def make_directory (directory): 
@@ -1538,7 +1538,7 @@ def main():
 	pos_ed  = combined_erodep[-1, :, :] # get final one for comparision
 	erodep_mean = pos_ed.mean(axis=0)  
 
-	sqerror= mean_sqerror(  erodep_mean, pred_elev,  groundtruth_elev,  groundtruth_erodep_pts[-1,:])
+	rmse, rmse_sed= mean_sqerror(  erodep_mean, pred_elev,  groundtruth_elev,  groundtruth_erodep_pts[-1,:])
  
 
  
@@ -1547,7 +1547,7 @@ def main():
 
 	
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
-	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60, sqerror, np.sqrt(sqerror)], fmt='%1.2f'  )
+	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60,  rmse_sed, rmse], fmt='%1.2f'  )
 
 
 	 

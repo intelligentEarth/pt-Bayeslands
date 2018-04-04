@@ -37,7 +37,7 @@ FCFLAGS = -O3 -funroll-loops --param max-unroll-times=2 -cpp \
 
 FFLAGS2 = $(FCFLAGS) -I$(MODDIR)
 F2PY_FLAGS = --f90exec=${FMPI} -I$(MODDIR)
-LDFLAGS = -L$(LIBDIR2)/
+LDFLAGS =$($LDFLAGS)" -L$(LIBDIR2)/ -shared" 
 
 # Depression filling algorithm using Planchon and Darboux
 PD_FMOD = PDclass

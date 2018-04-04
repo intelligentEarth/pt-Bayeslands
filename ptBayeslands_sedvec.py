@@ -4,8 +4,13 @@
 
 # Bayeslands II: Parallel tempering for multi-core systems - Badlands
 
-
 from __future__ import print_function, division
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
+
 import multiprocessing
 
 import numpy as np
@@ -34,9 +39,9 @@ from io import StringIO
 from cycler import cycler
 import os
 
-import matplotlib as mpl
+
+
 import matplotlib.mlab as mlab
-import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
@@ -1225,12 +1230,12 @@ def main():
 
 	random.seed(time.time()) 
 
-	samples = 10000  # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 100000  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 3
+	problem = 1 
   
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -1238,7 +1243,7 @@ def main():
 		print('xmlinput', xmlinput)
 		simtime = 15000 
 
-		resolu_factor =  20 # this helps visualize the surface distance in meters 
+		resolu_factor =  200 # this helps visualize the surface distance in meters 
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1430,7 +1435,7 @@ def main():
 	# PT is a multicore implementation must num_chains >= 2
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
-	num_chains = 10
+	num_chains = 30  
 	swap_ratio = 0.1    #adapt these 
 	burn_in =0.1 
 	num_successive_topo = 4

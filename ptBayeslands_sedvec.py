@@ -66,9 +66,8 @@ from plotly.offline.offline import _plot_html
 
 
 class ptReplica(multiprocessing.Process):
-	def __init__(self, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed ,  swap_interval, sim_interval, simtime, samples, real_elev,  real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
-				#	vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec, self.realvalues_vec, check_likelihood_sed , sim_interval, muted, simtime, self.NumSamples, real_elev,  real_erodep, real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb_str,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],self.swap_interval, burn_in))
-		
+	def __init__(self,  num_param, vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,   check_likelihood_sed ,  swap_interval, sim_interval, simtime, samples, real_elev,  real_erodep_pts, erodep_coords, filename, xmlinput,  run_nb, tempr, parameter_queue,event , main_proc,   burn_in):
+				 
 
 		#--------------------------------------------------------
 		multiprocessing.Process.__init__(self)
@@ -87,6 +86,8 @@ class ptReplica(multiprocessing.Process):
 		self.simtime = simtime
 		self.samples = samples
 		self.run_nb = run_nb 
+
+		self.num_param =  num_param
 
 		self.font = 9
 		self.width = 1 
@@ -166,6 +167,10 @@ class ptReplica(multiprocessing.Process):
 		model.input.SPLm = input_vector[2] 
 		model.input.SPLn = input_vector[3] 
 
+		if self.num_param > 4:  # will work for more parameters
+			model.input.CDm = input_vector[4] # submarine diffusion
+			model.input.CDa = input_vector[5] # aerial diffusion
+
 		elev_vec = collections.OrderedDict()
 		erodep_vec = collections.OrderedDict()
 		erodep_pts_vec = collections.OrderedDict()
@@ -199,7 +204,7 @@ class ptReplica(multiprocessing.Process):
 		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size 
 
 		tau_erodep_pts =  (np.sum(np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts)))/self.real_erodep_pts.size
- 	
+	
 		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq 
 
 		
@@ -436,8 +441,7 @@ class ptReplica(multiprocessing.Process):
 
 			if ( i % self.swap_interval == 0 ):
 
-
-				print(' CHECK if can SWAP -----------------------------------------------------------------------------------------------------> ')
+ 
 
 				if i> burnsamples and self.runninghisto == True:
 					hist, bin_edges = np.histogram(pos_param[burnsamples:i,0], density=True)
@@ -499,11 +503,7 @@ class ptReplica(multiprocessing.Process):
   
  
 		file_name = self.filename+'/posterior/pos_parameters/chain_'+ str(self.temperature)+ '.txt'
-		np.savetxt(file_name,pos_param )
-
-
-		#file_name = self.filename+'/posterior/predicted_erodep/chain_erodep_'+ str(self.temperature)+ '.txt'
-		#np.savetxt(file_name, list_erodep )
+		np.savetxt(file_name,pos_param ) 
 
 		file_name = self.filename+'/posterior/predicted_topo/chain_xslice_'+ str(self.temperature)+ '.txt'
 		np.savetxt(file_name, list_xslicepred )
@@ -523,9 +523,7 @@ class ptReplica(multiprocessing.Process):
 
 		for s in range(self.sim_interval.size):  
 			file_name = self.filename + '/posterior/predicted_erodep/chain_' + str(self.sim_interval[s]) + '_' + str(self.temperature) + '.txt'
-			np.savetxt(file_name, list_erodep_time[:,s, :] , fmt='%.2f')
- 
-
+			np.savetxt(file_name, list_erodep_time[:,s, :] , fmt='%.2f') 
 
 		for k, v in sum_elev.items():
 			sum_elev[k] = np.divide(sum_elev[k], num_div)
@@ -536,9 +534,7 @@ class ptReplica(multiprocessing.Process):
 
 			file_name = self.filename + '/posterior/predicted_topo/chain_' + str(k) + '_' + str(self.temperature) + '.txt'
 			np.savetxt(file_name, mean_pred_elevation, fmt='%.2f')
-
-			#file_name = self.filename + '/posterior/predicted_erodep/chain_' + str(k) + '_' + str(self.temperature) + '.txt'
-			#np.savetxt(file_name, mean_pred_erodep_pnts, fmt='%.2f')
+ 
  
 		self.signal_main.set()
 
@@ -608,7 +604,7 @@ class ParallelTempering:
 
 		self.assign_temptarures()
 		for i in xrange(0, self.num_chains):
-			self.chains.append(ptReplica( self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
+			self.chains.append(ptReplica( self.num_param, self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
 			
 			
 	
@@ -825,17 +821,16 @@ class ParallelTempering:
 		x = np.linspace(0, x_ymid_mean.size / self.resolu_factor, num=x_ymid_mean.size) 
 		x_ = np.linspace(0, y_xmid_mean.size / self.resolu_factor, num=y_xmid_mean.size)
 
-	  
-
-
-
+		#ax.set_xlim(-width,len(ind)+width)
+ 
 		plt.plot(x, x_ymid_real, label='ground truth') 
 		plt.plot(x, x_ymid_mean, label='pred. (mean)')
 		plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
 		plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
+
+
 		plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.4)
-		plt.legend(loc='upper right')
-		#plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+		plt.legend(loc='upper right') 
 
 
 		plt.title("Uncertainty in topography prediction (cross section)  ")
@@ -886,62 +881,38 @@ class ParallelTempering:
 		replica_topo = np.zeros((self.sim_interval.size, self.num_chains, topo.shape[0], topo.shape[1])) #3D
 		combined_topo = np.zeros(( self.sim_interval.size, topo.shape[0], topo.shape[1]))
 
-		replica_erodep_pts = np.zeros(( self.num_chains, self.real_erodep_pts.shape[0] ))
-
-
-		#list_erodep = np.zeros(( self.num_chains,  self.NumSamples - burnin, self.real_erodep_pts.shape[0] )) # this will become 4D vec when you will consider time variant erodep
-
+		replica_erodep_pts = np.zeros(( self.num_chains, self.real_erodep_pts.shape[0] )) 
 
 		combined_erodep = np.zeros((self.sim_interval.size, self.num_chains, self.NumSamples - burnin, self.real_erodep_pts.shape[0] ))
 
 		timespan_erodep = np.zeros((self.sim_interval.size,  (self.NumSamples - burnin) * self.num_chains, self.real_erodep_pts.shape[0] ))
-
-
-
-		#file_name = self.filename+'/posterior/predicted_topo/chain_erodep_'+ str(self.temperature)+ '.txt'
-		#np.savetxt(file_name, list_erodep )
-
  
-
  
-
-
 		for i in range(self.num_chains):
 			file_name = self.folder + '/posterior/pos_parameters/'+filename + str(self.tempratures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			pos_param[i, :, :] = dat[burnin:,:]
-
-
-			#file_name = self.folder + '/posterior/predicted_erodep/chain_erodep_'+  str(self.tempratures[i]) + '.txt'
-			#dat = np.loadtxt(file_name) 
-			#list_erodep[i, :, :] = dat[burnin:,:]
-
+  
 			file_name = self.folder + '/posterior/predicted_topo/chain_xslice_'+  str(self.tempratures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
-			list_xslice[i, :, :] = dat[burnin:,:]
-
+			list_xslice[i, :, :] = dat[burnin:,:] 
 
 			file_name = self.folder + '/posterior/predicted_topo/chain_yslice_'+  str(self.tempratures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			list_yslice[i, :, :] = dat[burnin:,:] 
 
 			file_name = self.folder + '/posterior/pos_likelihood/'+filename + str(self.tempratures[i]) + '.txt'
-			dat = np.loadtxt(file_name)
-
+			dat = np.loadtxt(file_name) 
 			likehood_rep[i, :] = dat[burnin:]
 
 			file_name = self.folder + '/posterior/accept_list/' + filename + str(self.tempratures[i]) + '.txt'
-			dat = np.loadtxt(file_name)
-
-			accept_list[i, :] = dat
-
+			dat = np.loadtxt(file_name) 
+			accept_list[i, :] = dat 
 
 			file_name = self.folder + '/posterior/accept_list/' + filename + str(self.tempratures[i]) + '_accept.txt'
-			dat = np.loadtxt(file_name)
-
+			dat = np.loadtxt(file_name) 
 			accept_percent[i, :] = dat
-
-			#print('printed pos for chain', i)
+ 
 
 			for j in range(self.sim_interval.size):
 
@@ -972,27 +943,18 @@ class ParallelTempering:
 			dx = combined_erodep[j,:,:,:].transpose(2,0,1).reshape(self.real_erodep_pts.shape[0],-1)
 
 			timespan_erodep[j,:,:] = dx.T
-
-			 
-
  
-
-		#combined_erodep = np.mean(replica_erodep_pts, axis = 0) 
 
 		accept = np.sum(accept_percent)/self.num_chains
-
-
-		pred_topofinal = combined_topo[-1,:,:] # get the last mean pedicted topo to calculate mean squared error loss
  
+		pred_topofinal = combined_topo[-1,:,:] # get the last mean pedicted topo to calculate mean squared error loss 
 
-		np.savetxt(self.folder + '/pos_param.txt', posterior.T)
-
+		np.savetxt(self.folder + '/pos_param.txt', posterior.T) 
 		
 		np.savetxt(self.folder + '/likelihood.txt', likelihood_vec.T, fmt='%1.5f')
 
 		np.savetxt(self.folder + '/accept_list.txt', accept_list, fmt='%1.2f')
-
-
+  
 		np.savetxt(self.folder + '/acceptpercent.txt', [accept], fmt='%1.2f')
 
 		return posterior, likelihood_vec.T, accept_list, combined_topo,   timespan_erodep, accept, pred_topofinal, xslice, yslice
@@ -1201,6 +1163,9 @@ class ParallelTempering:
 		plt.clf()
 
 
+# class  above this line -------------------------------------------------------------------------------------------------------
+
+
 def mean_sqerror(  pred_erodep, pred_elev,  real_elev,  real_erodep_pts):
 		 
 		elev = np.sqrt(np.sum(np.square(pred_elev -  real_elev))  / real_elev.size)
@@ -1231,13 +1196,13 @@ def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_inte
 	
 	## the bars
 	rects1 = ax.bar(index, erodep_mean, width,
-                color='blue',
-                yerr=erodep_std,
-                error_kw=dict(elinewidth=2,ecolor='red'))
+				color='blue',
+				yerr=erodep_std,
+				error_kw=dict(elinewidth=2,ecolor='red'))
 
 	rects2 = ax.bar(index+width, groundtruth_erodep_pts, width, color='green', 
-                yerr=ground_erodepstd,
-                error_kw=dict(elinewidth=2,ecolor='red') )
+				yerr=ground_erodepstd,
+				error_kw=dict(elinewidth=2,ecolor='red') )
 
 	# axes and labels
 	#ax.set_xlim(-width,len(ind)+width)
@@ -1266,12 +1231,12 @@ def main():
 
 	random.seed(time.time()) 
 
-	samples = 5000 # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 1000 # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 1
+	problem = 3
 
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -1288,9 +1253,7 @@ def main():
 		n = 1
 
 		real_rain = 1.5
-		real_erod = 5.e-5
- 
-
+		real_erod = 5.e-5  
 
 		likelihood_sediment = True
 
@@ -1304,35 +1267,32 @@ def main():
 		
 		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
-		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
+		stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
 
-		num_param = vec_parameters.size
-
-		print(vec_parameters) 
-
- 
-
+		num_param = vec_parameters.size 
  
 		erodep_coords = np.array([[60,60],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69],[79,91],[96,77],[42,49]]) # need to hand pick given your problem
+
+		if (true_parameter_vec.shape[0] != vec_parameters.size ) :
+			print( ' seems your true parameters file in data folder is not updated with true values of your parameters.  ')
+			print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ')
+
+			return
 
 	elif problem == 2:
 		problemfolder = 'Examples/crater/'
 		xmlinput = problemfolder + 'crater.xml'
 		simtime = 50000
 
-		resolu_factor =  200
+		resolu_factor =  200 
 
-
-		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
-		 
+		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') 
 
 		m = 0.5 # used to be constants  
 		n = 1
 
 		real_rain = 1.5
-		real_erod = 5.e-5
-
-
+		real_erod = 5.e-5 
 
 		likelihood_sediment = True
 
@@ -1345,14 +1305,15 @@ def main():
 		 
 		
 		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
-		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
-
-		num_param = vec_parameters.size
-
-		print(vec_parameters) 
-
+		stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
+		num_param = vec_parameters.size 
 
 		erodep_coords =  np.array([[60,60],[52,67],[74,76],[62,45],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69]]) # need to hand pick given your problem
+
+		if (true_parameter_vec.shape[0] != vec_parameters.size ):
+			print( ' seems your true parameters file in data folder is not updated with true values of your parameters.  ')
+			print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 
+			return
 
 	elif problem == 3:
 		problemfolder = 'Examples/etopo_fast/'
@@ -1361,7 +1322,7 @@ def main():
 		resolu_factor = 1.5
 
 
-		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
+		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') # make sure that this is updated in case when you intro more parameters. should have as many rows as parameters
 		 
 
 		m = 0.5 # used to be constants  
@@ -1370,33 +1331,39 @@ def main():
 		real_rain = 1.5
 		real_erod = 5.e-6
 
+		real_caerial = 8.e-1 
+		
+		real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-6, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-6, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-6, 2, 2,  1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-		 	
+ 
 		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
-		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
+		stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) #[stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
 
 		num_param = vec_parameters.size
-
-		print(vec_parameters) 
+ 
 
 		erodep_coords =  np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]]) # need to hand pick given your problem
 
-
+		if (true_parameter_vec.shape[0] != vec_parameters.size ):
+			print( ' seems your true parameters file in data folder is not updated with true values of your parameters.  ')
+			print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 
+			return 
+ 
 
 	elif problem == 4:
 		problemfolder = 'Examples/etopo/'
 		xmlinput = problemfolder + 'etopo.xml'
-		simtime = 500000
-		resolu_factor = 1.5
+		simtime = 1000000
+		resolu_factor = 0.75
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1409,23 +1376,32 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-6, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-6, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		real_caerial = 8.e-1 
+		
+		real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
+
+
+		maxlimits_vec = [3.0,7.e-6, 2, 2,  1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 	 
- 	
+	
 		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
-		stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
-
+		stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
 		num_param = vec_parameters.size
 
 		print(vec_parameters) 
 		
 		erodep_coords = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])  # need to hand pick given your problem
+
+		if (true_parameter_vec.shape[0] != vec_parameters.size ): 
+			print( ' seems your true parameters file in data folder is not updated with true values of your parameters.  ')
+			print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 
+			return
 
 
 	elif problem == 5:
@@ -1496,7 +1472,7 @@ def main():
 	#-------------------------------------------------------------------------------------
  
 
-	pt = ParallelTempering(vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts[-1,:], erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
+	pt = ParallelTempering(  vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts[-1,:], erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
 	#-------------------------------------------------------------------------------------
 	# intialize the MCMC chains
 	#-------------------------------------------------------------------------------------

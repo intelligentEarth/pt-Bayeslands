@@ -203,14 +203,25 @@ class ptReplica(multiprocessing.Process):
 
 		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size 
 
-		tau_erodep_pts =  (np.sum(np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts)))/self.real_erodep_pts.size
+		tau_erodep =  np.zeros(self.sim_interval.size) 
+		
+		for i in range(  self.sim_interval.size):
+			tau_erodep[i]  =  np.sum(np.square(pred_erodep_pts_vec[self.sim_interval[i]] - self.real_erodep_pts[i]))/ self.real_erodep_pts.shape[1]
+ 
 	
 		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq 
 
+		likelihood_erodep = 0 
 		
-		if self.check_likehood_sed  == True:
-			likelihood_erodep_pts = -0.5 * np.log(2 * math.pi * tau_erodep_pts) - 0.5 * np.square(pred_erodep_pts_vec[self.simtime] - self.real_erodep_pts) / tau_erodep_pts # only considers point or core of erodep
-			likelihood = np.sum(likelihood_elev) + np.sum(likelihood_erodep_pts)
+		if self.check_likehood_sed  == True: 
+
+			for i in range(1, self.sim_interval.size):
+				likelihood_erodep  += np.sum(-0.5 * np.log(2 * math.pi * tau_erodep[i]) - 0.5 * np.square(pred_erodep_pts_vec[self.sim_interval[i]] - self.real_erodep_pts[i]) / tau_erodep[i]) # only considers point or core of erodep
+		 
+
+			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * 50)
+
+			print(likelihood_erodep, likelihood, ' Likelihood ero-dep - Likelihood')
 
 		else:
 			likelihood = np.sum(likelihood_elev)
@@ -478,8 +489,7 @@ class ptReplica(multiprocessing.Process):
 				if not self.parameter_queue.empty() : 
 					try:
 						result =  self.parameter_queue.get()
-
-						print(result, ' res back')
+ 
 						
 						v_current= result[0:v_current.size]     
 						likelihood = result[v_current.size]
@@ -881,11 +891,11 @@ class ParallelTempering:
 		replica_topo = np.zeros((self.sim_interval.size, self.num_chains, topo.shape[0], topo.shape[1])) #3D
 		combined_topo = np.zeros(( self.sim_interval.size, topo.shape[0], topo.shape[1]))
 
-		replica_erodep_pts = np.zeros(( self.num_chains, self.real_erodep_pts.shape[0] )) 
+		replica_erodep_pts = np.zeros(( self.num_chains, self.real_erodep_pts.shape[1] )) 
 
-		combined_erodep = np.zeros((self.sim_interval.size, self.num_chains, self.NumSamples - burnin, self.real_erodep_pts.shape[0] ))
+		combined_erodep = np.zeros((self.sim_interval.size, self.num_chains, self.NumSamples - burnin, self.real_erodep_pts.shape[1] ))
 
-		timespan_erodep = np.zeros((self.sim_interval.size,  (self.NumSamples - burnin) * self.num_chains, self.real_erodep_pts.shape[0] ))
+		timespan_erodep = np.zeros((self.sim_interval.size,  (self.NumSamples - burnin) * self.num_chains, self.real_erodep_pts.shape[1] ))
  
  
 		for i in range(self.num_chains):
@@ -940,7 +950,7 @@ class ParallelTempering:
 				combined_topo[j,:,:] += replica_topo[j,i,:,:]  
 			combined_topo[j,:,:] = combined_topo[j,:,:]/self.num_chains
 
-			dx = combined_erodep[j,:,:,:].transpose(2,0,1).reshape(self.real_erodep_pts.shape[0],-1)
+			dx = combined_erodep[j,:,:,:].transpose(2,0,1).reshape(self.real_erodep_pts.shape[1],-1)
 
 			timespan_erodep[j,:,:] = dx.T
  
@@ -1168,8 +1178,8 @@ class ParallelTempering:
 
 def mean_sqerror(  pred_erodep, pred_elev,  real_elev,  real_erodep_pts):
 		 
-		elev = np.sqrt(np.sum(np.square(pred_elev -  real_elev))  / real_elev.size)
-		sed =  np.sqrt(np.sum(np.square(pred_erodep -  real_erodep_pts))/ real_erodep_pts.size )
+		elev = np.sqrt(np.sum(np.square(pred_elev -  real_elev))  / real_elev.size)  
+		sed =  np.sqrt(  np.sum(np.square(pred_erodep -  real_erodep_pts)) / real_erodep_pts.size  ) 
 
 		return elev + sed, sed
 
@@ -1236,7 +1246,7 @@ def main():
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 3
+	problem = 2
 
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -1472,7 +1482,7 @@ def main():
 	#-------------------------------------------------------------------------------------
  
 
-	pt = ParallelTempering(  vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts[-1,:], erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
+	pt = ParallelTempering(  vec_parameters, num_chains, maxtemp, samples,swap_interval,fname, true_parameter_vec, num_param  ,  groundtruth_elev,  groundtruth_erodep_pts , erodep_coords, simtime, sim_interval, resolu_factor, run_nb_str, xmlinput)
 	#-------------------------------------------------------------------------------------
 	# intialize the MCMC chains
 	#-------------------------------------------------------------------------------------
@@ -1505,16 +1515,19 @@ def main():
 
 		print(pos_ed) 
 		erodep_mean = pos_ed.mean(axis=0)  
-		erodep_std = pos_ed.std(axis=0) 
-		print(erodep_std, ' std')   
-		print(erodep_mean, '  mean')
+		erodep_std = pos_ed.std(axis=0)  
 		plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts[i,:], sim_interval[i], fname) 
 		#np.savetxt(fname + '/posterior/predicted_erodep/com_erodep_'+str(sim_interval[i]) +'_.txt', pos_ed)
 
-	pos_ed  = combined_erodep[-1, :, :] # get final one for comparision
-	erodep_mean = pos_ed.mean(axis=0)  
+	pred_erodep = np.zeros(( groundtruth_erodep_pts.shape[0], groundtruth_erodep_pts.shape[1] )) # just to get the right size
 
-	rmse, rmse_sed= mean_sqerror(  erodep_mean, pred_elev,  groundtruth_elev,  groundtruth_erodep_pts[-1,:])
+
+
+	for i in range(sim_interval.size): 
+		pos_ed  = combined_erodep[i, :, :] # get final one for comparision
+		pred_erodep[i,:] = pos_ed.mean(axis=0)   
+
+	rmse, rmse_sed= mean_sqerror(  pred_erodep, pred_elev,  groundtruth_elev,  groundtruth_erodep_pts)
  
 
  

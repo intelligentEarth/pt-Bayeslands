@@ -53,8 +53,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import itertools
 
 #nb = 0 
-
-
 import sys
 
 
@@ -233,9 +231,6 @@ class ptReplica(multiprocessing.Process):
 	def run(self):
 
 		#note this is a chain that is distributed to many cores. The chain is also known as Replica in Parallel Tempering
-
-
-
 
 		samples = self.samples
 
@@ -800,9 +795,14 @@ class ParallelTempering:
 		return (pos_param,likelihood_rep, accept_list,   combined_erodep,  pred_topofinal)
 
 	def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
+		print ('list_xslice', list_xslice.shape)
+		print ('list_yslice', list_yslice.shape)
 
 		ymid = int(self.real_elev.shape[1]/2 ) #   cut the slice in the middle 
 		xmid = int(self.real_elev.shape[0]/2)
+
+		print( 'ymid',ymid)
+		print( 'xmid', xmid)
 
 		print(self.real_elev)
 
@@ -847,7 +847,8 @@ class ParallelTempering:
 		plt.xlabel(' Distance in kilometers  ')
 		plt.ylabel(' Height in meters')
 		
-		plt.savefig(self.folder+'/x_ymid_opt.png') 
+		plt.savefig(self.folder+'/x_ymid_opt.png')  
+		plt.savefig(self.folder+'/x_ymid_opt.svg', format='svg', dpi=400)
 		plt.clf()
 
 
@@ -862,7 +863,9 @@ class ParallelTempering:
 		plt.legend(loc='upper right')
 
 		plt.title("Uncertainty in topography prediction  (cross section)  ")
-		plt.savefig(self.folder+'/y_xmid_opt.png') 
+		plt.savefig(self.folder+'/y_xmid_opt.png')  
+		plt.savefig(self.folder+'/y_xmid_opt.svg', format='svg', dpi=400)
+
 		plt.clf()
 
 		 
@@ -1232,9 +1235,6 @@ def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_inte
 	plt.savefig(fname +'/pos_erodep_'+str( sim_interval) +'_.png')
 	plt.clf()    
 
-	 
-
-
 
 
 def main():
@@ -1246,7 +1246,7 @@ def main():
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 2
+	problem = 3
 
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -1494,6 +1494,10 @@ def main():
 	#run the chains in a sequence in ascending order
 	#-------------------------------------------------------------------------------------
 	pos_param,likehood_rep, accept_list,   combined_erodep, pred_elev  = pt.run_chains()
+
+
+
+
 	print('sucessfully sampled') 
 
 	timer_end = time.time() 
@@ -1528,15 +1532,24 @@ def main():
 		pred_erodep[i,:] = pos_ed.mean(axis=0)   
 
 	rmse, rmse_sed= mean_sqerror(  pred_erodep, pred_elev,  groundtruth_elev,  groundtruth_erodep_pts)
- 
-
- 
-
-
 
 	
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
 	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60,  rmse_sed, rmse], fmt='%1.2f'  )
+
+	print(pos_param)
+
+
+	mpl_fig = plt.figure()
+	ax = mpl_fig.add_subplot(111)
+
+	ax.boxplot(pos_param.T) 
+	ax.set_xlabel('Badlands parameters')
+	ax.set_ylabel('Posterior') 
+	plt.legend(loc='upper right') 
+	plt.title("Boxplot of Posterior")
+	plt.savefig(fname+'/badlands_pos.png')
+	plt.savefig(fname+'/badlands_pos.svg', format='svg', dpi=400)
 
 
 	 

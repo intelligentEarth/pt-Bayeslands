@@ -112,6 +112,8 @@ class ptReplica(multiprocessing.Process):
 
 		self.sim_interval = sim_interval
 
+		self.sedscalingfactor = 50 # this is to ensure that the sediment likelihood is given more emphasis as it considers fewer points (dozens of points) when compared to elev liklihood (thousands of points)
+
 	def interpolateArray(self, coords=None, z=None, dz=None):
 		"""
 		Interpolate the irregular spaced dataset from badlands on a regular grid.
@@ -217,7 +219,7 @@ class ptReplica(multiprocessing.Process):
 				likelihood_erodep  += np.sum(-0.5 * np.log(2 * math.pi * tau_erodep[i]) - 0.5 * np.square(pred_erodep_pts_vec[self.sim_interval[i]] - self.real_erodep_pts[i]) / tau_erodep[i]) # only considers point or core of erodep
 		 
 
-			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * 50)
+			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * self.sedscalingfactor)
 
 			print(likelihood_erodep, likelihood, ' Likelihood ero-dep - Likelihood')
 
@@ -1536,9 +1538,6 @@ def main():
 	
 	print ('time taken  in minutes = ', (timer_end-timer_start)/60)
 	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60,  rmse_sed, rmse], fmt='%1.2f'  )
-
-	print(pos_param)
-
 
 	mpl_fig = plt.figure()
 	ax = mpl_fig.add_subplot(111)

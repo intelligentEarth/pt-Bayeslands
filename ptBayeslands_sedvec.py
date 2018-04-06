@@ -830,8 +830,8 @@ class ParallelTempering:
 		y_xmid_95th= np.percentile(list_yslice, 95, axis=1)
  
 
-		x = np.linspace(0, x_ymid_mean.size / self.resolu_factor, num=x_ymid_mean.size) 
-		x_ = np.linspace(0, y_xmid_mean.size / self.resolu_factor, num=y_xmid_mean.size)
+		x = np.linspace(0, x_ymid_mean.size * self.resolu_factor, num=x_ymid_mean.size) 
+		x_ = np.linspace(0, y_xmid_mean.size * self.resolu_factor, num=y_xmid_mean.size)
 
 		#ax.set_xlim(-width,len(ind)+width)
  
@@ -846,7 +846,7 @@ class ParallelTempering:
 
 
 		plt.title("Uncertainty in topography prediction (cross section)  ")
-		plt.xlabel(' Distance in kilometers  ')
+		plt.xlabel(' Distance (km)  ')
 		plt.ylabel(' Height in meters')
 		
 		plt.savefig(self.folder+'/x_ymid_opt.png')  
@@ -858,7 +858,7 @@ class ParallelTempering:
 		plt.plot(x_, y_xmid_mean, label='pred. (mean)') 
 		plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
 		plt.plot(x_, y_xmid_95th, label='pred.(95th percen.)')
-		plt.xlabel(' Distance in kilometers ')
+		plt.xlabel(' Distance (km) ')
 		plt.ylabel(' Height in meters')
 		
 		plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4)
@@ -1151,14 +1151,32 @@ class ParallelTempering:
 		if zmax == None:
 			zmax =  zData.max()
 
-		data = Data([Surface(x=zData.shape[0], y=zData.shape[1], z=zData, colorscale='YIGnBu')])
+		tickvals= [0,50,75,-50]
 
-		layout = Layout(title='Predicted Topography ' , autosize=True, width=width, height=height,scene=Scene(
-					zaxis=ZAxis(range=[zmin, zmax], autorange=False, nticks=10, gridcolor='rgb(255, 255, 255)',
+
+		xx = (np.linspace(0, zData.shape[0]* self.resolu_factor, num=zData.shape[0]/10 )) 
+		yy = (np.linspace(0, zData.shape[1] * self.resolu_factor, num=zData.shape[1]/10 )) 
+
+		xx = np.around(xx, decimals=0)
+		yy = np.around(yy, decimals=0)
+		print (xx,' xx')
+		print (yy,' yy')
+
+		# range = [0,zData.shape[0]* self.resolu_factor]
+		#range = [0,zData.shape[1]* self.resolu_factor],
+
+		data = Data([Surface(x= zData.shape[0] , y= zData.shape[1] , z=zData, colorscale='YIGnBu')])
+
+		#if self.problem ==1 or self.problem == 2: # quick fix just when you want to downcale the axis as in crater problems 
+
+		 
+
+		layout = Layout(title='Predicted Topography' , autosize=True, width=width, height=height,scene=Scene(
+					zaxis=ZAxis(title = 'Elevation (m)   ', range=[zmin, zmax], autorange=False, nticks=6, gridcolor='rgb(255, 255, 255)',
 								gridwidth=2, zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
-					xaxis=XAxis(nticks=10, gridcolor='rgb(255, 255, 255)', gridwidth=2,
+					xaxis=XAxis(title = 'x-coordinates  ',  tickvals= xx,      gridcolor='rgb(255, 255, 255)', gridwidth=2,
 								zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
-					yaxis=YAxis(nticks=10, gridcolor='rgb(255, 255, 255)', gridwidth=2,
+					yaxis=YAxis(title = 'y-coordinates  ', tickvals= yy,    gridcolor='rgb(255, 255, 255)', gridwidth=2,
 								zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
 					bgcolor="rgb(244, 244, 248)"
 				)
@@ -1243,20 +1261,19 @@ def main():
 
 	random.seed(time.time()) 
 
-	samples = 5000 # total number of samples by all the chains (replicas) in parallel tempering
+	samples = 40000 # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 3
-
+	problem = 4
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
 		xmlinput = problemfolder + 'crater.xml'
 		print('xmlinput', xmlinput)
 		simtime = 15000 
 
-		resolu_factor =  200 # this helps visualize the surface distance in meters 
+		resolu_factor =  0.002 # this helps visualize the surface distance in meters 
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1296,7 +1313,7 @@ def main():
 		xmlinput = problemfolder + 'crater.xml'
 		simtime = 50000
 
-		resolu_factor =  200 
+		resolu_factor =  0.002
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') 
 
@@ -1375,7 +1392,7 @@ def main():
 		problemfolder = 'Examples/etopo/'
 		xmlinput = problemfolder + 'etopo.xml'
 		simtime = 1000000
-		resolu_factor = 0.75
+		resolu_factor = 1000
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 

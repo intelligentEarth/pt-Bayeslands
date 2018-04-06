@@ -75,7 +75,7 @@ class BayesLands():
 		self.step_m = (mlimit[1] - mlimit[0])*0.01
 		self.step_n = (nlimit[1] - nlimit[0])*0.01
 
-		self.sim_interval = np.arange(0, self.simtime+1, 5000)
+		self.sim_interval = np.arange(0, self.simtime+1, self.simtime/4)
 		self.burn_in = 0.0
 
 	def blackBox(self, rain, erodibility, m , n):
@@ -267,16 +267,16 @@ class BayesLands():
 		plt.savefig('%s/plot.png'% (fname), bbox_inches='tight', dpi=300, transparent=False)
 		plt.show()
 
-	def storeParams(self, naccept, pos_rain, pos_erod, pos_likl, sq_error, tausq_elev,tausq_erdp_pts):
+	def storeParams(self, naccept, pos_rain, pos_erod, pos_likl):
 		"""
 		
 		"""
 		pos_likl = str(pos_likl)
 		pos_rain = str(pos_rain)
 		pos_erod = str(pos_erod)
-		sq_error = str(sq_error)
-		tausq_elev = str(tausq_elev)
-		tausq_erdp_pts = str(tausq_erdp_pts)
+		# sq_error = str(sq_error)
+		# tausq_elev = str(tausq_elev)
+		# tausq_erdp_pts = str(tausq_erdp_pts)
 
 		if not os.path.isfile(('%s/exp_data.txt' % (self.filename))):
 			with file(('%s/exp_data.txt' % (self.filename)),'w') as outfile:
@@ -286,12 +286,12 @@ class BayesLands():
 				outfile.write(pos_erod)
 				outfile.write('\t')
 				outfile.write(pos_likl)
-				outfile.write('\t')
-				outfile.write(sq_error)
-				outfile.write('\t')
-				outfile.write(tausq_elev)
-				outfile.write('\t')
-				outfile.write(tausq_erdp_pts)
+				# outfile.write('\t')
+				# outfile.write(sq_error)
+				# outfile.write('\t')
+				# outfile.write(tausq_elev)
+				# outfile.write('\t')
+				# outfile.write(tausq_erdp_pts)
 				outfile.write('\n')
 		else:
 			with file(('%s/exp_data.txt' % (self.filename)),'a') as outfile:
@@ -301,58 +301,43 @@ class BayesLands():
 				outfile.write(pos_erod)
 				outfile.write('\t')
 				outfile.write(pos_likl)
-				outfile.write('\t')
-				outfile.write(sq_error)
-				outfile.write('\t')
-				outfile.write(tausq_elev)
-				outfile.write('\t')
-				outfile.write(tausq_erdp_pts)
+				# outfile.write('\t')
+				# outfile.write(sq_error)
+				# outfile.write('\t')
+				# outfile.write(tausq_elev)
+				# outfile.write('\t')
+				# outfile.write(tausq_erdp_pts)
 				outfile.write('\n')
 				  
 	def likelihoodFunc(self,input_vector, real_elev, real_erdp, real_erdp_pts, tausq_elev, tausq_erdp, tausq_erdp_pts):
 		"""
 		
 		"""
-		# pred_elev_vec, pred_erdp_vec, pred_erdp_pts_vec = self.blackBox(input_vector[0], input_vector[1], input_vector[2], input_vector[3])
-		
-		# tausq_elev = (np.sum(np.square(pred_elev_vec[self.simtime] - real_elev)))/real_elev.size
-
-		# print 'tausq_elev', tausq_elev
-
-		# likelihood_elev = -0.5 * np.log(2* math.pi * tausq_elev) - 0.5 * np.square(pred_elev_vec[self.simtime] - real_elev) / tausq_elev
-		
-		# likelihood = np.sum(likelihood_elev)
-
-		# # if self.likl_sed:
-		# # 	# likelihood_erdp  = -0.5 * np.log(2* math.pi * tausq_erdp) - 0.5 * np.square(pred_erdp_vec[self.simtime] - real_erdp) / tausq_erdp		
-		# # 	likelihood_erdp_pts = -0.5 * np.log(2* math.pi * tausq_erdp_pts) - 0.5 * np.square(pred_erdp_pts_vec[self.simtime] - real_erdp_pts) / tausq_erdp_pts
-		# # 	likelihood = np.sum(likelihood_elev) + np.sum(likelihood_erdp_pts) 
-		# # 	# likelihood = np.sum(likelihood_elev) + np.sum(likelihood_erdp)
-		# # 	print 'I AM ACCIDENTLY HERE'
-		# # else:
-		# # 	likelihood = np.sum(likelihood_elev)
-
-		# return likelihood
-
-
 		pred_elev_vec, pred_erdp_vec, pred_erdp_pts_vec = self.blackBox(input_vector[0], input_vector[1], input_vector[2], input_vector[3])
 
 		tausq_elev = (np.sum(np.square(pred_elev_vec[self.simtime] - real_elev)))/real_elev.size
-
-		tausq_erdp_pts = (np.sum(np.square(pred_erdp_pts_vec[self.simtime] - real_erdp_pts)))/real_erdp_pts.size
-		
 		sq_error_elev = (np.sum(np.square(pred_elev_vec[self.simtime] - real_elev)))/real_elev.size
 
-		likelihood_elev = -0.5 * np.log(2* math.pi * tausq_elev) - 0.5 * np.square(pred_elev_vec[self.simtime] - real_elev) / tausq_elev
+		tausq_erdp_pts = np.zeros(self.sim_interval.size)
+		for i in range(self.sim_interval.size):
+			tausq_erdp_pts[i] = np.sum(np.square(pred_erdp_pts_vec[self.sim_interval[i]] - self.real_erdp_pts[i]))/real_erdp_pts.shape[1]
 		
+		# print 'tausq_erdp_pts' , tausq_erdp_pts
+
+		likelihood_elev = -0.5 * np.log(2* math.pi * tausq_elev) - 0.5 * np.square(pred_elev_vec[self.simtime] - real_elev) / tausq_elev
+		likelihood_erdp_pts = 0
+
 		if self.likl_sed:
 			#likelihood_erdp  = -0.5 * np.log(2* math.pi * tausq_erdp) - 0.5 * np.square(pred_erdp_vec[self.simtime] - real_erdp) / tausq_erdp		
-			likelihood_erdp_pts = -0.5 * np.log(2* math.pi * tausq_erdp_pts) - 0.5 * np.square(pred_erdp_pts_vec[self.simtime] - real_erdp_pts) / tausq_erdp_pts
-			likelihood = np.sum(likelihood_elev) + np.sum(likelihood_erdp_pts)
+			for i in range(1,self.sim_interval.size):
+				likelihood_erdp_pts += np.sum(-0.5 * np.log(2* math.pi * tausq_erdp_pts[i]) - 0.5 * np.square(pred_erdp_pts_vec[self.sim_interval[i]] - self.real_erdp_pts[i]) / tausq_erdp_pts[i])
+			
+			likelihood = np.sum(likelihood_elev) + (likelihood_erdp_pts)
 
-			sq_error_erdp_pts = (np.sum(np.square(pred_erdp_pts_vec[self.simtime] - real_erdp_pts)))/real_erdp_pts.size
+			sq_error_erdp_pts = np.sum(np.square(pred_erdp_pts_vec[self.sim_interval[i]] - self.real_erdp_pts[i]))/real_erdp_pts.shape[1]
 			sq_error = sq_error_elev+ sq_error_erdp_pts
 			print 'Using sediment pts in the likelihood'
+		
 		else:
 			likelihood = np.sum(likelihood_elev)
 			sq_error = sq_error_elev
@@ -407,6 +392,7 @@ class BayesLands():
 			for e in range(len(erod)):
 				print '\n'
 				print 'Rain : ', rain[r], '  Erod : ', erod[e]
+				print 'Simtime', self.simtime
 				
 				# Updating rain parameter and checking limits
 				p_rain = rain[r]
@@ -432,7 +418,7 @@ class BayesLands():
 				pos_rain[i] = p_rain
 				pos_likl[r,e] = likelihood
 				pos_sq_error[r,e] = sq_error
-				self.storeParams(i, pos_rain[i], pos_erod[i], pos_likl[r,e], pos_sq_error[r,e], tau_elev, tau_erdp_pts) 
+				self.storeParams(i, pos_rain[i], pos_erod[i], pos_likl[r,e]) 
 
 				i += 1
 
@@ -484,7 +470,7 @@ def main():
 		nlimit = [0.9, 1.1]
 		true_rain = 1.5
 		true_erod = 5.e-5
-		likl_sed = False
+		likl_sed = True
 		erdp_coords = erdp_coords_crater
 
 	elif choice == 3:
@@ -503,14 +489,14 @@ def main():
 	elif choice == 4:
 		directory = 'Examples/etopo'
 		xmlinput = '%s/etopo.xml' %(directory)
-		simtime = 500000
+		simtime = 1000000
 		rainlimits = [0.0, 3.0]
 		erodlimits = [3.e-6, 7.e-6]
 		mlimit = [0.4, 0.6]
 		nlimit = [0.9, 1.1]
 		true_rain = 1.5
 		true_erod = 5.e-6
-		likl_sed = False
+		likl_sed = True
 		erdp_coords = erdp_coords_etopo
 
 	else:

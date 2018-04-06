@@ -77,100 +77,101 @@ def interpolateArray(coords=None, z=None, dz=None):
 	dzreg = np.reshape(dzi,(ny,nx))
 	return zreg,dzreg
 
-def topoGenerator(directory,inputname, outputname, rain, erodibility, m, n, etime, erdp_coords, final_noise):
+def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_coords, final_noise):
+	"""	
 	"""
-		
-	"""
+	sim_interval = np.arange(0, simtime+1, simtime/4)
+	
 	model = badlandsModel()
-	# Define the XmL input file
-	model.load_xml('outputname',inputname, verbose = False, muted = True)
-
-	rreal = rain
-	ereal = erodibility
-
-	model.input.SPLero = ereal
-	model.flow.erodibility.fill(ereal)
-	model.force.rainVal[:] = rreal
-	#Adjust m and n values
+	model.load_xml(str(simtime), inputname, verbose = False, muted = True)
+	model.input.SPLero = erodibility
+	model.flow.erodibility.fill(erodibility)
+	model.force.rainVal[:] = rain
 	model.input.SPLm = m
-	model.input.SPLn = n   
+	model.input.SPLn = n
+
+	elev_vec = collections.OrderedDict()
+	erdp_vec = collections.OrderedDict()
+	erdp_pts_vec = collections.OrderedDict()
 	
-	model.run_to_time(etime, muted = True)
-	
-	elev,erdp = interpolateArray(model.FVmesh.node_coords[:, :2],model.elevation,model.cumdiff)
-
-	###########################
-	erdp_pts = np.zeros((erdp_coords.shape[0]))
-
-	for count, val in enumerate(erdp_coords):
-		erdp_pts[count] = erdp[val[0], val[1]]
-	###########################
-
-
-	############# Adding Noise
-	tausq_elev = elev.max()* 0.01
-	tausq_erdp = erdp.max()* 0.01
-	tausq_erdp_pts = erdp_pts.max()* 0.01
-	
-	# print tausq_elev, tausq_erdp, tausq_erdp_pts
-	# print 'elev.size', elev.size
-	elev_noise = np.random.normal(0, np.sqrt(tausq_elev), elev.size)
-	elev_noise = np.reshape(elev_noise,(elev.shape[0],elev.shape[1]))	
-	erdp_noise = np.random.normal(0, np.sqrt(tausq_erdp), erdp.size)
-	erdp_noise = np.reshape(erdp_noise,(erdp.shape[0],erdp.shape[1]))	
-	erdp_pts_noise = np.random.normal(0, np.sqrt(tausq_erdp_pts), erdp_pts.size)
-	erdp_pts_noise = np.reshape(erdp_pts_noise,(erdp_pts.shape))
-	# print 'noise', noise
-	# print 'noise shape now ', noise.shape
-
-	#############
-	
-	elev_=np.matrix(elev)
-	erdp_=np.matrix(erdp)
-	erdp_pts_ = np.matrix(erdp_pts)
-
-	if final_noise:
-		elev_mat=np.add(elev_, elev_noise)
-		erdp_mat=np.add(erdp_, erdp_noise)
-		erdp_pts_mat = np.add(erdp_pts_, erdp_pts_noise)
-	else:
-		elev_mat = elev_
-		erdp_mat = erdp_
-		erdp_pts_mat = erdp_pts_
-
-	np.savetxt('%s/data/%s_elev.txt' %(directory, outputname),elev_mat,fmt='%.5f')
-	np.savetxt('%s/data/%s_erdp.txt' %(directory,outputname),erdp_mat,fmt='%.5f')
-	np.savetxt('%s/data/%s_erdp_pts.txt' %(directory,outputname),erdp_pts_mat,fmt='%.5f')
-
-	viewGrid(directory,'%s_elev' %(outputname), 'N/A', rreal, ereal, zData=elev_mat, title='Export Slope Grid')
-	viewMap(directory,'%s_erdp' %(outputname), 'N/A', rreal, ereal, zData=erdp_mat, title='Export Slope Grid')
-	viewBar(directory,'%s_erdp_pts' %(outputname), 'N/A', rreal, ereal, xData = erdp_coords, yData=erdp_pts, title='Export Slope Grid')
-
-	return
-
-def visualiseInput(directory,inputname, outputname, rain, erodibility, m, n, etime, erdp_coords):
-	"""
+	for x in range(len(sim_interval)):
 		
-	"""
-	model = badlandsModel()
-	# Define the XmL input file
-	model.load_xml('real',inputname, verbose = False, muted = True)
+		simtime = sim_interval[x]
 
-	rreal = rain
-	ereal = erodibility
+		model.run_to_time(simtime, muted = True)
+		
+		elev, erdp = interpolateArray(model.FVmesh.node_coords[:, :2], model.elevation, model.cumdiff)
+		
+		erdp_pts = np.zeros((erdp_coords.shape[0]))
 
-	final_noise = False
+		for count, val in enumerate(erdp_coords):
+			erdp_pts[count] = erdp[val[0], val[1]]
 
-	topoGenerator(directory,inputname, outputname, rreal, ereal, m, n, etime, erdp_coords,final_noise)
+		# Adding Noise
+		tausq_elev = elev.max()* 0.01
+		tausq_erdp = erdp.max()* 0.01
+		tausq_erdp_pts = erdp_pts.max()* 0.01
+		
+		elev_noise = np.random.normal(0, np.sqrt(tausq_elev), elev.size)
+		elev_noise = np.reshape(elev_noise,(elev.shape[0],elev.shape[1]))	
+		erdp_noise = np.random.normal(0, np.sqrt(tausq_erdp), erdp.size)
+		erdp_noise = np.reshape(erdp_noise,(erdp.shape[0],erdp.shape[1]))	
+		erdp_pts_noise = np.random.normal(0, np.sqrt(tausq_erdp_pts), erdp_pts.size)
+		erdp_pts_noise = np.reshape(erdp_pts_noise,(erdp_pts.shape))
+		#
+		
+		elev_=np.matrix(elev)
+		erdp_=np.matrix(erdp)
+		erdp_pts_ = np.matrix(erdp_pts)
+
+		if final_noise:
+			elev_mat=np.add(elev_, elev_noise)
+			erdp_mat=np.add(erdp_, erdp_noise)
+			erdp_pts_mat = np.add(erdp_pts_, erdp_pts_noise)
+		else:
+			elev_mat = elev_
+			erdp_mat = erdp_
+			erdp_pts_mat = erdp_pts_
 	
-	elev = np.loadtxt('%s/data/%s_elev.txt' %(directory,outputname))
-	erdp = np.loadtxt('%s/data/%s_erdp.txt' %(directory,outputname))
-	erdp_pts = np.loadtxt('%s/data/%s_erdp_pts.txt' %(directory,outputname))
-	
-	viewGrid(directory,'%s_elev' %(outputname), 'N/A', rreal, ereal, zData=elev, title='Export Slope Grid')
-	# viewMap(directory,'%s_erdp' %(outputname), 'N/A', rreal, ereal,  zData=erdp, title='Export Slope Grid')
-	# viewBar(directory,'%s_erdp_pts' %(outputname), 'N/A', rreal, ereal, xData = erdp_coords, yData=erdp_pts, title='Export Slope Grid')
-	
+		elev_vec[simtime] = elev_mat
+		erdp_vec[simtime] = erdp_mat
+		erdp_pts_vec[simtime] = erdp_pts_mat
+		
+	for k, v in elev_vec.items():
+		# print 'k', k
+		if k == sim_interval[0]:
+			# np.savetxt('%s/data/initial_elev.txt' %directory,  elev_vec[k],fmt='%.5f')
+			viewGrid(directory,'initial_elev', 'N/A', rain, erodibility, zData=elev_vec[k], title='Export Slope Grid')
+		
+		elif k == sim_interval[-1]:
+			np.savetxt('%s/data/final_elev.txt' %directory, elev_vec[k],fmt='%.5f')
+			viewGrid(directory,'final_elev', 'N/A', rain, erodibility, zData=elev_vec[k], title='Export Slope Grid')
+		
+
+	for k, v in erdp_vec.items():
+		# print 'k'
+		# if k == sim_interval[0]:
+			# np.savetxt('%s/data/initial_erdp.txt' %directory,  erdp_vec[k],fmt='%.5f')
+			# viewMap(directory,'initial_erdp', 'N/A', rain, erodibility, zData=erdp_vec[k], title='Export Slope Grid')
+		
+		if k == sim_interval[-1]:
+			np.savetxt('%s/data/final_erdp.txt' %directory, erdp_vec[k],fmt='%.5f')
+			viewMap(directory,'final_erdp', 'N/A', rain, erodibility, zData=erdp_vec[k], title='Export Slope Grid')
+
+
+	erdp_pts_arr = np.zeros((sim_interval.size, erdp_pts_mat.size))
+	count = 0
+	for k, v in erdp_pts_vec.items():
+		erdp_pts_arr[count] = v
+		count +=1
+		# if k == sim_interval[0]:
+			# np.savetxt('%s/data/initial_erdp_pts.txt' %directory,  erdp_pts_vec[k],fmt='%.5f')
+			# viewBar(directory,'initial_erdp_pts', 'N/A', rain, erodibility, xData = erdp_coords, yData=erdp_pts_mat, title='Export Slope Grid')
+		
+		if k == sim_interval[-1]:
+			np.savetxt('%s/data/final_erdp_pts.txt' %directory,erdp_pts_arr,fmt='%.5f')
+			viewBar(directory,'final_erdp_pts', 'N/A', rain, erodibility, xData = erdp_coords ,yData=erdp_pts_arr[-1], title='Export Slope Grid')
+
 	return
 
 def viewGrid(directory,sample_num, likl, rain, erod, width = 1000, height = 1000, zmin = None, zmax = None, zData = None, title='Export Grid'):
@@ -318,7 +319,7 @@ def viewBar(directory,sample_num, likl, rain, erod, width = 500, height = 500, x
 		graph = plotly.offline.plot(fig, auto_open=False, output_type='file', filename='%s/images/erdppts_barcht_%s.html' %(directory, sample_num), validate=False)
 		
 		return
-	
+
 def main():
 	"""
 	
@@ -336,42 +337,33 @@ def main():
 	if choice == 1:
 		
 		tstart = time.clock()
-		
 		directory = 'Examples/crater_fast'
-		visualiseInput(directory,'%s/crater.xml' %(directory) ,'initial', 1.5 , 5.e-5, 0.5, 1, 0, erdp_coords_crater_fast)
-		topoGenerator(directory,'%s/crater.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 15000, erdp_coords_crater,final_noise)
+		topoGenerator(directory,'%s/crater.xml' %(directory), 1.5 , 5.e-5, 0.5, 1, 15000, erdp_coords_crater,final_noise)
 		
 		print 'TopoGen for crater_fast completed in (s):',time.clock()-tstart
 		
 	elif choice == 2:
 		
 		tstart = time.clock()
-		
 		directory = 'Examples/crater'
-		visualiseInput(directory,'%s/crater.xml' %(directory) ,'initial', 1.5 , 5.e-5, 0.5, 1, 0, erdp_coords_crater)
-		topoGenerator(directory,'%s/crater.xml' %(directory) , 'final', 1.5 , 5.e-5, 0.5, 1, 50000, erdp_coords_crater,final_noise)
+		topoGenerator(directory,'%s/crater.xml' %(directory), 1.5 , 5.e-5, 0.5, 1, 50000, erdp_coords_crater,final_noise)
 		
 		print 'TopoGen for crater completed in (s):',time.clock()-tstart
 
 	elif choice == 3:
 
 		tstart = time.clock()
-		
 		directory = 'Examples/etopo_fast'
-		visualiseInput(directory,'%s/etopo.xml' %(directory) ,'initial', 1.5 , 5.e-6, 0.5, 1, 0, erdp_coords_etopo_fast)
-		topoGenerator(directory,'%s/etopo.xml' %(directory) , 'final', 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo,final_noise)
+		topoGenerator(directory,'%s/etopo.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo,final_noise)
 		
 		print 'TopoGen for etopo fast completed in (s):',time.clock()-tstart
 
 	elif choice == 4:
 
 		tstart = time.clock()
-		
 		directory = 'Examples/etopo'
-		visualiseInput(directory,'%s/etopo.xml' %(directory) ,'initial', 1.5 , 5.e-6, 0.5, 1, 0, erdp_coords_etopo)
-		topoGenerator(directory,'%s/etopo.xml' %(directory) , 'final', 1.5 , 5.e-6, 0.5, 1, 500000, erdp_coords_etopo,final_noise)
+		topoGenerator(directory,'%s/etopo.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 1000000, erdp_coords_etopo,final_noise)
 		
 		print 'TopoGen for etopo completed in (s):',time.clock()-tstart
-
 
 if __name__ == "__main__": main()

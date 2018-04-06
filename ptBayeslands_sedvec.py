@@ -38,6 +38,7 @@ from PIL import Image
 from io import StringIO
 from cycler import cycler
 import os
+import sys
 
 
 import matplotlib.mlab as mlab
@@ -1241,12 +1242,12 @@ def main():
 
 	random.seed(time.time()) 
 
-	samples = 100000  # total number of samples by all the chains (replicas) in parallel tempering
+	samples = int(sys.argv[2]) #100000  # total number of samples by all the chains (replicas) in parallel tempering
 
 	run_nb = 0
 
 	#problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
-	problem = 2
+	problem = int(sys.argv[1])
 
 	if problem == 1:
 		problemfolder = 'Examples/crater_fast/'
@@ -1306,8 +1307,8 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, m, n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
@@ -1457,7 +1458,7 @@ def main():
 	# PT is a multicore implementation must num_chains >= 2
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
-	num_chains = 8  
+	num_chains = int(sys.argv[3]) #8  
 	swap_ratio = 0.1    #adapt these 
 	burn_in =0.1 
 	num_successive_topo = 4
@@ -1539,7 +1540,7 @@ def main():
 	print ('Folder: ', run_nb_str)
 	np.savetxt(fname+'/time_sqerror.txt',[ (timer_end-timer_start)/60,  rmse_sed, rmse], fmt='%1.2f'  )
 
-
+	print (num_chains, problemfolder, run_nb_str, (timer_end-timer_start)/60, rmse_sed, rmse)
 	 
 
 

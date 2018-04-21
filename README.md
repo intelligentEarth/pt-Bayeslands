@@ -13,3 +13,32 @@ Bayesian inference via Parallel Tempering for  Badlands
 
 
 When you use **Badlands**, please cite the above papers.
+
+### Generation of Test Problems
+
+https://github.com/badlands-model/BayesLands
+
+[Badlands installation and dependencies](https://github.com/badlands-model/paralleltemp_Bayeslands/blob/master/Prerequisites_Badlands.txt)
+
+### History for educational purpose: Parallel tempering source
+
+[Parallel tempering in Python for a benchmark problem](https://github.com/rohitash-chandra/parallel_temp_mixturemodel)
+
+[Multi-core parallel tempering in Python for a benchmark problem](https://github.com/rohitash-chandra/multicore_parallel_temp_mixturemodel)
+
+### Supplementary Results
+
+[Supplemtary results by problem](https://github.com/badlands-model/paralleltemp_Bayeslands/tree/master/supplementary_results)
+
+[Supplementary results documentation](https://github.com/badlands-model/paralleltemp_Bayeslands/blob/master/supplementary_results/bayeslandsRuns_figures.pdf)
+
+
+### Software development and experimentation
+
+Dr. Rohitash Chandra, Mr. Ratneel Deo, and Dr. Nathanial Buttersworth
+
+### Contact
+
+email: rohitash.chandra (at) sydney.edu.au
+[website](rohitash-chandra.github.io)
+

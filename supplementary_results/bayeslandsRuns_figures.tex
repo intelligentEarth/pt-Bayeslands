@@ -1,4 +1,4 @@
-   \documentclass[final,5p,times,twocolumn]{elsarticle}
+   \documentclass[preprint,1p,times]{elsarticle}
  
  \usepackage{graphicx}
  %% The amssymb package provides various useful mathematical symbols
@@ -73,7 +73,11 @@
   %-----------------------------------
    %-----------------------------------
  
- % \section{Results descriptions}
+\section{Computational environment for Parallel Tempering Bayeslands Experiments}
+All parallel tempering Bayeslands simulations were run on The University of Sydney HPC, Artemis. We utilised nodes built from Dell EMC Powedge C6420, with 48 cores and 192 GB per node. Our parallel tempering algorithm cannot communicate accross nodes so were run on a maximum of 48 cores. The design of the algorithm means it will only be as fast as it's slowest chain, so we see a plateau in speed improvement after around 20 replicas/cpus. As each node has 48 cores, we chose to run our primary experiments on 24 cores to fit within the node. RAM usage fluctuates depending on experiment, number of samples, replicas, etc, but is on the order of 2--60\,GB. Model variables were systematically explored to determine optimal and robust parameter choices for each experiment. The full set of successful experiments can be found in the accompaning spreadsheet \textit{BayeslandsRuns.xlsx}.
+
+\section{Expanded results}
+Summary of results for each problem, with optimal model parameters, replicated from the main paper, is shown here in Figrue \ref{tab:all_res}. The optimal model parameters, based on a balance of computational time and experimental accuracy accross all four problems, were drawn from the complete set of experiments. Several of the insights, and the evolution of the models, for these results are shown in Figures \ref{fig:crater_fast_cross}--\ref{fig:pos_allprob}. 
  
  \begin{table*}[htbp!]
  \centering
@@ -99,21 +103,22 @@
   %-----------------------------------
 
   \begin{figure*}[htb!]
-    \begin{center}
+{\centering
       \begin{tabular}{cc}
-        \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=90mm]{crater_fast/x_ymid_opt.png}}
-        \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=90mm]{crater_fast/y_xmid_opt.png}}\\
+        \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=70mm]{crater_fast/x_ymid_opt.png}}
+        \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=70mm]{crater_fast/y_xmid_opt.png}}\\
       \end{tabular}
       \caption{Crater-short: Elevation cross-section taken at mid-point along x-axis and y-axis }
    \label{fig:crater_fast_cross}
-    \end{center}
+}
   \end{figure*}
 
 
   %-----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc}
        \subfigure[Crater-short erosion-deposition after 25 \% evolution time ]{\includegraphics[width=80mm]{crater_fast/pos_erodep_3750.png}}
        \subfigure[Crater-short erosion-deposition  after 50 \% evolution time]{\includegraphics[width=80mm]{crater_fast/pos_erodep_7500.png}}\\
@@ -122,24 +127,25 @@
      \end{tabular}
      \caption{Crater-short erosion-deposition   }
   \label{fig:crater_fast_erodep}
-   \end{center}
+}
  \end{figure*}
 
 
  %----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc}
-       \subfigure[Crater-short rainfall distribution]{\includegraphics[width=90mm]{crater_fast/pos_distri_0_pos_.png}}
-       \subfigure[Crater-short erodibility distribution]{\includegraphics[width=90mm]{crater_fast/pos_distri_1_pos_.png}}\\
-       \subfigure[Crater-short m distribution]{\includegraphics[width=90mm]{crater_fast/pos_distri_2_pos_.png}}
-       \subfigure[Crater-short c-surface distribution]{\includegraphics[width=90mm]{crater_fast/pos_distri_3_pos_.png}}\\
+       \subfigure[Crater-short rainfall distribution]{\includegraphics[width=70mm]{crater_fast/pos_distri_0_pos_.png}}
+       \subfigure[Crater-short erodibility distribution]{\includegraphics[width=70mm]{crater_fast/pos_distri_1_pos_.png}}\\
+       \subfigure[Crater-short m distribution]{\includegraphics[width=70mm]{crater_fast/pos_distri_2_pos_.png}}
+       \subfigure[Crater-short c-surface distribution]{\includegraphics[width=70mm]{crater_fast/pos_distri_3_pos_.png}}\\
 
      \end{tabular}
      \caption{Crater-short: Posterior distribution of rainfall, erodibility, m and c-surface}
   \label{fig:crater_fast_cmarine}
-   \end{center}
+}
  \end{figure*}
 
  %----------------------------------
@@ -147,21 +153,23 @@
   %-----------------------------------
 
   \begin{figure*}[htb!]
-    \begin{center}
+{
+\centering
       \begin{tabular}{cc}
-        \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=90mm]{crater/x_ymid_opt.png}}
-        \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=90mm]{crater/y_xmid_opt.png}}\\
+        \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=70mm]{crater/x_ymid_opt.png}}
+        \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=70mm]{crater/y_xmid_opt.png}}\\
       \end{tabular}
       \caption{crater: Elevation cross-section taken at mid-point along x-axis and y-axis }
    \label{fig:crater_cross}
-    \end{center}
+}
   \end{figure*}
 
 
   %-----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc}
        \subfigure[crater erosion-deposition after 25 \% evolution time ]{\includegraphics[width=80mm]{crater/pos_erodep_12500.png}}
        \subfigure[crater erosion-deposition  after 50 \% evolution time]{\includegraphics[width=80mm]{crater/pos_erodep_25000.png}}\\
@@ -170,24 +178,25 @@
      \end{tabular}
      \caption{crater erosion-deposition   }
   \label{fig:crater_erodep}
-   \end{center}
+}
  \end{figure*}
 
 
  %----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc}
-       \subfigure[crater rainfall distribution]{\includegraphics[width=90mm]{crater/pos_distri_0_pos_.png}}
-       \subfigure[crater erodibility distribution]{\includegraphics[width=90mm]{crater/pos_distri_1_pos_.png}}\\
-       \subfigure[crater m distribution]{\includegraphics[width=90mm]{crater/pos_distri_2_pos_.png}}
-       \subfigure[crater c-surface distribution]{\includegraphics[width=90mm]{crater/pos_distri_3_pos_.png}}\\
+       \subfigure[crater rainfall distribution]{\includegraphics[width=70mm]{crater/pos_distri_0_pos_.png}}
+       \subfigure[crater erodibility distribution]{\includegraphics[width=70mm]{crater/pos_distri_1_pos_.png}}\\
+       \subfigure[crater m distribution]{\includegraphics[width=70mm]{crater/pos_distri_2_pos_.png}}
+       \subfigure[crater c-surface distribution]{\includegraphics[width=70mm]{crater/pos_distri_3_pos_.png}}\\
 
      \end{tabular}
      \caption{crater: Posterior distribution of rainfall, erodibility, m and c-surface}
   \label{fig:crater_cmarine}
-   \end{center}
+}
  \end{figure*}
 
 
@@ -196,21 +205,23 @@
   %-----------------------------------
 
   \begin{figure*}[htb!]
-    \begin{center}
+{
+\centering
       \begin{tabular}{cc}
-        \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=90mm]{etopo_fast/x_ymid_opt.png}}
-        \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=90mm]{etopo_fast/y_xmid_opt.png}}\\
+        \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=70mm]{etopo_fast/x_ymid_opt.png}}
+        \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=70mm]{etopo_fast/y_xmid_opt.png}}\\
       \end{tabular}
       \caption{eTopo\_short: Elevation cross-section taken at mid-point along x-axis and y-axis }
    \label{fig:etopo_fast_cross}
-    \end{center}
+}
   \end{figure*}
 
 
   %-----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc}
        \subfigure[Etopo-short erosion-deposition after 25 \% evolution time ]{\includegraphics[width=80mm]{etopo_fast/pos_erodep_125000.png}}
        \subfigure[Etopo-short erosion-deposition  after 50 \% evolution time]{\includegraphics[width=80mm]{etopo_fast/pos_erodep_250000.png}}\\
@@ -219,24 +230,25 @@
      \end{tabular}
      \caption{Etopo-short erosion-deposition   }
   \label{fig:etopo_fast_erodep}
-   \end{center}
+}
  \end{figure*}
 
 
  %----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc}
-       \subfigure[Etopo-short rainfall distribution]{\includegraphics[width=90mm]{etopo_fast/pos_distri_0_pos_.png}}
-       \subfigure[Etopo-short erodibility distribution]{\includegraphics[width=90mm]{etopo_fast/pos_distri_1_pos_.png}}\\
-       \subfigure[Etopo-short m distribution]{\includegraphics[width=90mm]{etopo_fast/pos_distri_2_pos_.png}}
-       \subfigure[Etopo-short c-surface distribution]{\includegraphics[width=90mm]{etopo_fast/pos_distri_5_pos_.png}}\\
+       \subfigure[Etopo-short rainfall distribution]{\includegraphics[width=70mm]{etopo_fast/pos_distri_0_pos_.png}}
+       \subfigure[Etopo-short erodibility distribution]{\includegraphics[width=70mm]{etopo_fast/pos_distri_1_pos_.png}}\\
+       \subfigure[Etopo-short m distribution]{\includegraphics[width=70mm]{etopo_fast/pos_distri_2_pos_.png}}
+       \subfigure[Etopo-short c-surface distribution]{\includegraphics[width=70mm]{etopo_fast/pos_distri_5_pos_.png}}\\
 
      \end{tabular}
      \caption{Etopo-short: Posterior distribution of rainfall, erodibility, m and c-surface}
   \label{fig:etopo_fast_cmarine}
-   \end{center}
+}
  \end{figure*}
 
  
@@ -246,21 +258,23 @@
  %-----------------------------------
 
  \begin{figure*}[htb!]
-   \begin{center}
+{
+\centering
      \begin{tabular}{cc} 
-       \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=90mm]{etopo/x_ymid_opt.png}} 
-       \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=90mm]{etopo/y_xmid_opt.png}}\\
+       \subfigure[Elevation cross-section along x-axis]{\includegraphics[width=70mm]{etopo/x_ymid_opt.png}} 
+       \subfigure[Elevation cross-section along y-axis]{\includegraphics[width=70mm]{etopo/y_xmid_opt.png}}\\
      \end{tabular}
      \caption{eTopo: Elevation cross-section taken at mid-point along x-axis and y-axis }
   \label{fig:etopo_cross}
-   \end{center}
+}
  \end{figure*}
  
  
  %-----------------------------------
  
 \begin{figure*}[htb!]
-  \begin{center}
+{
+\centering
     \begin{tabular}{cc} 
       \subfigure[eTopo erosion-deposition after 25 \% evolution time ]{\includegraphics[width=80mm]{etopo/pos_erodep_250000.png}} 
       \subfigure[eTopo erosion-deposition  after 50 \% evolution time]{\includegraphics[width=80mm]{etopo/pos_erodep_500000.png}}\\ 
@@ -269,24 +283,25 @@
     \end{tabular}
     \caption{eTopo erosion-deposition}
  \label{fig:etopo_erodep}
-  \end{center}
+}
 \end{figure*}
 
 
 %----------------------------------
 
 \begin{figure*}[htb!]
-  \begin{center}
+{
+\centering
     \begin{tabular}{cc} 
-      \subfigure[eTopo rainfall distribution]{\includegraphics[width=90mm]{etopo/pos_distri_0_pos_.png}} 
-      \subfigure[eTopo erodibility distribution]{\includegraphics[width=90mm]{etopo/pos_distri_1_pos_.png}}\\
-      \subfigure[eTopo m distribution]{\includegraphics[width=90mm]{etopo/pos_distri_2_pos_.png}} 
-      \subfigure[eTopo c-surface distribution]{\includegraphics[width=90mm]{etopo/pos_distri_5_pos_.png}}\\
+      \subfigure[eTopo rainfall distribution]{\includegraphics[width=70mm]{etopo/pos_distri_0_pos_.png}} 
+      \subfigure[eTopo erodibility distribution]{\includegraphics[width=70mm]{etopo/pos_distri_1_pos_.png}}\\
+      \subfigure[eTopo m distribution]{\includegraphics[width=70mm]{etopo/pos_distri_2_pos_.png}} 
+      \subfigure[eTopo c-surface distribution]{\includegraphics[width=70mm]{etopo/pos_distri_5_pos_.png}}\\
        
     \end{tabular}
     \caption{eTopo: Posterior distribution of rainfall, erodibility, m and c-surface}
  \label{fig:etopo_cmarine}
-  \end{center}
+}
 \end{figure*}
 
 %----------------------------------

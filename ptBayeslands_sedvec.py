@@ -113,6 +113,8 @@ class ptReplica(multiprocessing.Process):
 
 		self.sim_interval = sim_interval
 
+		self.sedscalingfactor = 50 # this is to ensure that the sediment likelihood is given more emphasis as it considers fewer points (dozens of points) when compared to elev liklihood (thousands of points)
+
 	def interpolateArray(self, coords=None, z=None, dz=None):
 		"""
 		Interpolate the irregular spaced dataset from badlands on a regular grid.
@@ -218,7 +220,7 @@ class ptReplica(multiprocessing.Process):
 				likelihood_erodep  += np.sum(-0.5 * np.log(2 * math.pi * tau_erodep[i]) - 0.5 * np.square(pred_erodep_pts_vec[self.sim_interval[i]] - self.real_erodep_pts[i]) / tau_erodep[i]) # only considers point or core of erodep
 		 
 
-			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * 50)
+			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * self.sedscalingfactor)
 
 			print(likelihood_erodep, likelihood, ' Likelihood ero-dep - Likelihood')
 
@@ -470,8 +472,10 @@ class ptReplica(multiprocessing.Process):
 
  
 				others = np.asarray([likelihood])
-				param = np.concatenate([v_current,others])     
-			 
+				param = np.concatenate([v_current,others,np.asarray([self.temperature])])     
+				print("v_current",v_current)
+				print("others",others)
+				print("temp",np.asarray([self.temperature])) 
 				# paramater placed in queue for swapping between chains
 				self.parameter_queue.put(param)
 				
@@ -502,8 +506,11 @@ class ptReplica(multiprocessing.Process):
 		#--------------------------------------------------------------- 
 
 		others = np.asarray([ likelihood])
-		param = np.concatenate([v_current,others])   
-
+		param = np.concatenate([v_current,others,np.asarray([self.temperature])])   
+		print("param first:",param)
+		print("v_current",v_current)
+                print("others",others)
+                print("temp",np.asarray([self.temperature]))
 		self.parameter_queue.put(param)
 
   
@@ -553,6 +560,7 @@ class ParallelTempering:
 		self.swap_interval = swap_interval
 		self.folder = fname
 		self.maxtemp = maxtemp
+		self.num_swap = 0
 		self.num_chains = num_chains
 		self.chains = []
 		self.tempratures = []
@@ -584,11 +592,14 @@ class ParallelTempering:
 		self.realvalues  =  realvalues_vec 
 		
 		# create queues for transfer of parameters between process chain
-		self.chain_parameters = [multiprocessing.Queue() for i in range(0, self.num_chains) ]
+		#self.chain_parameters = [multiprocessing.Queue() for i in range(0, self.num_chains) ]
+                self.parameter_queue = [multiprocessing.Queue() for i in range(num_chains)]
+		self.chain_queue = multiprocessing.JoinableQueue()	
+		self.wait_chain = [multiprocessing.Event() for i in range (self.num_chains)]
 
 		# two ways events are used to synchronize chains
 		self.event = [multiprocessing.Event() for i in range (self.num_chains)]
-		self.wait_chain = [multiprocessing.Event() for i in range (self.num_chains)]
+		#self.wait_chain = [multiprocessing.Event() for i in range (self.num_chains)]
  
 
 	
@@ -610,9 +621,37 @@ class ParallelTempering:
 
 		self.assign_temptarures()
 		for i in xrange(0, self.num_chains):
-			self.chains.append(ptReplica( self.num_param, self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.tempratures[i], self.chain_parameters[i], self.event[i], self.wait_chain[i],burn_in))
+			self.chains.append(ptReplica( self.num_param, self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.tempratures[i], self.parameter_queue[i],self.event[i], self.wait_chain[i],burn_in))
 			
-			
+	def swap_procedure(self, parameter_queue_1, parameter_queue_2):
+		#print (parameter_queue_2, ", param1:",parameter_queue_1)
+		if parameter_queue_2.empty() is False and parameter_queue_1.empty() is False:
+			param1 = parameter_queue_1.get()
+			param2 = parameter_queue_2.get()
+			print ("paramsssss:",param1,"self",param1[self.num_param],"nums",self.num_param)
+			#w1 = param1[0:self.num_param]
+			#eta1 = param1[self.num_param]
+			lhood1 = param1[self.num_param]
+			T1 = param1[self.num_param+1]
+			#w2 = param2[0:self.num_param]
+			#eta2 = param2[self.num_param]
+			lhood2 = param2[self.num_param]
+			T2 = param2[self.num_param+1]
+			#print('yo')
+			#SWAPPING PROBABILITIES
+			swap_proposal =  (lhood1/[1 if lhood2 == 0 else lhood2])*(1/T1 * 1/T2)
+			u = np.random.uniform(0,1)
+			print("Checking to swap...")
+			if u < swap_proposal:
+				
+				print('SWAPPED, u',u,' for',swap_proposal)
+				self.num_swap += 1
+				param_temp =  param1
+				param1 = param2
+				param2 = param_temp
+			return param1, param2
+		else:
+			return		
 	
 
 	def run_chains (self ):
@@ -650,10 +689,10 @@ class ParallelTempering:
 
 
 
-		flag_running = True 
+		#flag_running = True 
 
 		
-		while flag_running:          
+		while True:          
 
 			#-------------------------------------------------------------------------------------
 			# wait for chains to complete one pass through the samples
@@ -662,70 +701,90 @@ class ParallelTempering:
 			for j in range(0,self.num_chains): 
 				#print (j, ' - waiting')
 				self.wait_chain[j].wait()
-			
+				#print ("finished waiting")	
 
 			
 			#-------------------------------------------------------------------------------------
 			#get info from chains
 			#-------------------------------------------------------------------------------------
 			
-			for j in range(0,self.num_chains): 
-				if self.chain_parameters[j].empty() is False :
-					result =  self.chain_parameters[j].get()
-					replica_param[j,:] = result[0:self.num_param]   
-					lhood[j] = result[self.num_param]
+			#for j in range(0,self.num_chains): 
+			#	if self.chain_parameters[j].empty() is False :
+			#		result =  self.chain_parameters[j].get()
+			#		replica_param[j,:] = result[0:self.num_param]   
+			#		lhood[j] = result[self.num_param]
  
  
 
 			# create swapping proposals between adjacent chains
-			for k in range(0, self.num_chains-1): 
-				swap_proposal[k]=  (lhood[k]/[1 if lhood[k+1] == 0 else lhood[k+1]])*(1/self.tempratures[k] * 1/self.tempratures[k+1])
+			#for k in range(0, self.num_chains-1): 
+			#	swap_proposal[k]=  (lhood[k]/[1 if lhood[k+1] == 0 else lhood[k+1]])*(1/self.tempratures[k] * 1/self.tempratures[k+1])
 
 			#print(' before  swap_proposal  --------------------------------------+++++++++++++++++++++++=-')
 
-			for l in range( self.num_chains-1, 0, -1):
-				#u = 1
-				u = random.uniform(0, 1)
-				swap_prob = swap_proposal[l-1]
+			#for l in range( self.num_chains-1, 0, -1):
+			#	#u = 1
+			#	u = random.uniform(0, 1)
+			#	swap_prob = swap_proposal[l-1]
 
 
 
-				if u < swap_prob : 
+			#	if u < swap_prob : 
 
-					number_exchange[l] = number_exchange[l] +1  
+			#		number_exchange[l] = number_exchange[l] +1  
 
-					others = np.asarray([  lhood[l-1] ]  ) 
-					para = np.concatenate([replica_param[l-1,:],others])   
+			#		others = np.asarray([  lhood[l-1] ]  ) 
+			#		para = np.concatenate([replica_param[l-1,:],others])   
  
 				   
-					self.chain_parameters[l].put(para) 
+			#		self.chain_parameters[l].put(para) 
 
-					others = np.asarray([ lhood[l] ] )
-					param = np.concatenate([replica_param[l,:],others])
+			#		others = np.asarray([ lhood[l] ] )
+			#		param = np.concatenate([replica_param[l,:],others])
  
-					self.chain_parameters[l-1].put(param)
+			#		self.chain_parameters[l-1].put(param)
 					
-				else:
+			#	else:
 
 
-					others = np.asarray([  lhood[l-1] ])
-					para = np.concatenate([replica_param[l-1,:],others]) 
+			#		others = np.asarray([  lhood[l-1] ])
+			#		para = np.concatenate([replica_param[l-1,:],others]) 
  
 				   
-					self.chain_parameters[l-1].put(para) 
+			#		self.chain_parameters[l-1].put(para) 
 
-					others = np.asarray([  lhood[l]  ])
-					param = np.concatenate([replica_param[l,:],others])
+			#		others = np.asarray([  lhood[l]  ])
+			#		param = np.concatenate([replica_param[l,:],others])
  
-					self.chain_parameters[l].put(param)
+			#		self.chain_parameters[l].put(param)
 
 
 			#-------------------------------------------------------------------------------------
 			# resume suspended process
 			#-------------------------------------------------------------------------------------
+			#for k in range (self.num_chains):
+			#		self.event[k].set()
+			for k in range(0,self.num_chains-1):
+				#print('starting swap')
+				self.chain_queue.put(self.swap_procedure(self.parameter_queue[k],self.parameter_queue[k+1])) 
+				while True:
+					if self.chain_queue.empty():
+						self.chain_queue.task_done()
+						#print(k,'EMPTY QUEUE')
+						break
+					swap_process = self.chain_queue.get()
+					#print(swap_process)
+					if swap_process is None:
+						self.chain_queue.task_done()
+						#print(k,'No Process')
+						break
+					param1, param2 = swap_process
+					#self.chain_queue.task_done()
+					self.parameter_queue[k].put(param1)
+					self.parameter_queue[k+1].put(param2)
 			for k in range (self.num_chains):
-					self.event[k].set()
-								
+					#print(k)
+					self.event[k].set()					
 
 			#-------------------------------------------------------------------------------------
 			#check if all chains have completed runing
@@ -734,11 +793,12 @@ class ParallelTempering:
 			for i in range(self.num_chains):
 				if self.chains[i].is_alive() is False:
 					count+=1
-					while self.chain_parameters[i].empty() is False:
-						dummy = self.chain_parameters[i].get()
+			#		while self.chain_parameters[i].empty() is False:
+			#			dummy = self.chain_parameters[i].get()
 
 			if count == self.num_chains :
-				flag_running = False
+				break
+				#flag_running = False
 			
 
 		#-------------------------------------------------------------------------------------
@@ -829,8 +889,8 @@ class ParallelTempering:
 		y_xmid_95th= np.percentile(list_yslice, 95, axis=1)
  
 
-		x = np.linspace(0, x_ymid_mean.size / self.resolu_factor, num=x_ymid_mean.size) 
-		x_ = np.linspace(0, y_xmid_mean.size / self.resolu_factor, num=y_xmid_mean.size)
+		x = np.linspace(0, x_ymid_mean.size * self.resolu_factor, num=x_ymid_mean.size) 
+		x_ = np.linspace(0, y_xmid_mean.size * self.resolu_factor, num=y_xmid_mean.size)
 
 		#ax.set_xlim(-width,len(ind)+width)
  
@@ -845,7 +905,7 @@ class ParallelTempering:
 
 
 		plt.title("Uncertainty in topography prediction (cross section)  ")
-		plt.xlabel(' Distance in kilometers  ')
+		plt.xlabel(' Distance (km)  ')
 		plt.ylabel(' Height in meters')
 		
 		plt.savefig(self.folder+'/x_ymid_opt.png')  
@@ -857,7 +917,7 @@ class ParallelTempering:
 		plt.plot(x_, y_xmid_mean, label='pred. (mean)') 
 		plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
 		plt.plot(x_, y_xmid_95th, label='pred.(95th percen.)')
-		plt.xlabel(' Distance in kilometers ')
+		plt.xlabel(' Distance (km) ')
 		plt.ylabel(' Height in meters')
 		
 		plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4)
@@ -1150,14 +1210,32 @@ class ParallelTempering:
 		if zmax == None:
 			zmax =  zData.max()
 
-		data = Data([Surface(x=zData.shape[0], y=zData.shape[1], z=zData, colorscale='YIGnBu')])
+		tickvals= [0,50,75,-50]
 
-		layout = Layout(title='Predicted Topography ' , autosize=True, width=width, height=height,scene=Scene(
-					zaxis=ZAxis(range=[zmin, zmax], autorange=False, nticks=10, gridcolor='rgb(255, 255, 255)',
+
+		xx = (np.linspace(0, zData.shape[0]* self.resolu_factor, num=zData.shape[0]/10 )) 
+		yy = (np.linspace(0, zData.shape[1] * self.resolu_factor, num=zData.shape[1]/10 )) 
+
+		xx = np.around(xx, decimals=0)
+		yy = np.around(yy, decimals=0)
+		print (xx,' xx')
+		print (yy,' yy')
+
+		# range = [0,zData.shape[0]* self.resolu_factor]
+		#range = [0,zData.shape[1]* self.resolu_factor],
+
+		data = Data([Surface(x= zData.shape[0] , y= zData.shape[1] , z=zData, colorscale='YIGnBu')])
+
+		#if self.problem ==1 or self.problem == 2: # quick fix just when you want to downcale the axis as in crater problems 
+
+		 
+
+		layout = Layout(title='Predicted Topography' , autosize=True, width=width, height=height,scene=Scene(
+					zaxis=ZAxis(title = 'Elevation (m)   ', range=[zmin,zmax], autorange=False, nticks=6, gridcolor='rgb(255, 255, 255)',
 								gridwidth=2, zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
-					xaxis=XAxis(nticks=10, gridcolor='rgb(255, 255, 255)', gridwidth=2,
+					xaxis=XAxis(title = 'x-coordinates  ',  tickvals= xx,      gridcolor='rgb(255, 255, 255)', gridwidth=2,
 								zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
-					yaxis=YAxis(nticks=10, gridcolor='rgb(255, 255, 255)', gridwidth=2,
+					yaxis=YAxis(title = 'y-coordinates  ', tickvals= yy,    gridcolor='rgb(255, 255, 255)', gridwidth=2,
 								zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
 					bgcolor="rgb(244, 244, 248)"
 				)
@@ -1255,7 +1333,7 @@ def main():
 		print('xmlinput', xmlinput)
 		simtime = 15000 
 
-		resolu_factor =  200 # this helps visualize the surface distance in meters 
+		resolu_factor =  0.002 # this helps visualize the surface distance in meters 
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1295,7 +1373,7 @@ def main():
 		xmlinput = problemfolder + 'crater.xml'
 		simtime = 50000
 
-		resolu_factor =  200 
+		resolu_factor =  0.002
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') 
 
@@ -1374,7 +1452,7 @@ def main():
 		problemfolder = 'Examples/etopo/'
 		xmlinput = problemfolder + 'etopo.xml'
 		simtime = 1000000
-		resolu_factor = 0.75
+		resolu_factor = 1000
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1423,7 +1501,53 @@ def main():
 
 		# to be done later
 
-	 
+	
+        elif problem == 6:
+                problemfolder = 'Examples/mountain/'
+                xmlinput = problemfolder + 'mountain.xml'
+                simtime = 50000
+                resolu_factor = 1.5
+
+
+                true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') # make sure that this is updated in case when you intro more parameters. should have as many rows as parameters
+
+
+                m = 0.5 # used to be constants  
+                n = 1
+
+                real_rain = 1.5
+                real_erod = 5.e-6
+
+                real_caerial = 8.e-1
+
+                real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
+
+                likelihood_sediment = True
+
+                maxlimits_vec = [[3.0,2.0],7.e-6, 2, 2, 1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+                minlimits_vec = [[0.0,1.0] ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+                                                                        ## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
+
+                                                                        #if you want to freeze a parameter, keep max and min limits the same
+                vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
+
+                stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+
+                stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) #[stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
+
+                num_param = vec_parameters.size
+
+
+                erodep_coords =  np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]]) # need to hand pick given your problem
+
+                if (true_parameter_vec.shape[0] != vec_parameters.size ):
+                        print( ' seems your true parameters file in data folder is not updated with true values of your parameters.  ')
+                        print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ')
+                        return
+
+
+
+ 
 	else:
 		print('choose some problem  ')
 
@@ -1459,7 +1583,7 @@ def main():
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
 	num_chains = int(sys.argv[3]) #8  
-	swap_ratio = 0.1    #adapt these 
+	swap_ratio = 0.1   #adapt these 
 	burn_in =0.1 
 	num_successive_topo = 4
 

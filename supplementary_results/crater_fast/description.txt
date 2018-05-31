@@ -1,0 +1,121 @@
+
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]
+\samples: 4166
+	stepsize_vec: [  6.00000000e-02   8.00000000e-07   4.00000000e-02   4.00000000e-02]
+	step_ratio_vec: [ 0.02  0.02  0.02  0.02]
+	swap interval: 416
+	Initial_proposed_vec: [  2.75608492e+00   5.93397900e-05   5.46881057e-01   1.93328880e+00]

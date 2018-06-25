@@ -222,7 +222,7 @@ class ptReplica(multiprocessing.Process):
 
 			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * self.sedscalingfactor)
 
-			print(likelihood_erodep, likelihood, ' Likelihood ero-dep - Likelihood')
+			#print(likelihood_erodep, likelihood, ' Likelihood ero-dep - Likelihood')
 
 		else:
 			likelihood = np.sum(likelihood_elev)
@@ -247,7 +247,7 @@ class ptReplica(multiprocessing.Process):
 		for i in range(stepsize_vec.size): # calculate the step size of each of the parameters
 			stepsize_vec[i] = self.stepratio_vec[i] * span[i]
 
-		print(stepsize_vec, 'stesize_vec')
+		#print(stepsize_vec, 'stesize_vec')
 
 
 
@@ -351,7 +351,7 @@ class ptReplica(multiprocessing.Process):
 				elif v_proposal[j] < self.minlimits_vec[j]:
 					v_proposal[j] = v_current[j]
 
-			print(v_proposal)  
+			#print(v_proposal)  
 			# Passing paramters to calculate likelihood and rmse with new tau
 			[likelihood_proposal, predicted_elev,  pred_erodep_pts] = self.likelihood_func(v_proposal)
 
@@ -375,12 +375,12 @@ class ptReplica(multiprocessing.Process):
 			likeh_list[i+1,0] = likelihood_proposal
 
 
-			print((i % self.swap_interval), i,  self.swap_interval, ' mod swap')
+			#print((i % self.swap_interval), i,  self.swap_interval, ' mod swap')
 
 
 
 			if u < mh_prob: # Accept sample
-				print (v_proposal,   i,likelihood_proposal, self.temperature, num_accepted, ' is accepted - rain, erod, step rain, step erod, likh')
+				#print (v_proposal,   i,likelihood_proposal, self.temperature, num_accepted, ' is accepted - rain, erod, step rain, step erod, likh')
 				count_list.append(i)            # Append sample number to accepted list
 				
 				likelihood = likelihood_proposal
@@ -473,9 +473,9 @@ class ptReplica(multiprocessing.Process):
  
 				others = np.asarray([likelihood])
 				param = np.concatenate([v_current,others,np.asarray([self.temperature])])     
-				print("v_current",v_current)
-				print("others",others)
-				print("temp",np.asarray([self.temperature])) 
+				#print("v_current",v_current)
+				#print("others",others)
+				#print("temp",np.asarray([self.temperature])) 
 				# paramater placed in queue for swapping between chains
 				self.parameter_queue.put(param)
 				
@@ -507,10 +507,10 @@ class ptReplica(multiprocessing.Process):
 
 		others = np.asarray([ likelihood])
 		param = np.concatenate([v_current,others,np.asarray([self.temperature])])   
-		print("param first:",param)
-		print("v_current",v_current)
-                print("others",others)
-                print("temp",np.asarray([self.temperature]))
+		#print("param first:",param)
+		#print("v_current",v_current)
+                #print("others",others)
+                #print("temp",np.asarray([self.temperature]))
 		self.parameter_queue.put(param)
 
   
@@ -628,7 +628,7 @@ class ParallelTempering:
 		if parameter_queue_2.empty() is False and parameter_queue_1.empty() is False:
 			param1 = parameter_queue_1.get()
 			param2 = parameter_queue_2.get()
-			print ("paramsssss:",param1,"self",param1[self.num_param],"nums",self.num_param)
+			#print ("paramsssss:",param1,"self",param1[self.num_param],"nums",self.num_param)
 			#w1 = param1[0:self.num_param]
 			#eta1 = param1[self.num_param]
 			lhood1 = param1[self.num_param]
@@ -641,10 +641,10 @@ class ParallelTempering:
 			#SWAPPING PROBABILITIES
 			swap_proposal =  (lhood1/[1 if lhood2 == 0 else lhood2])*(1/T1 * 1/T2)
 			u = np.random.uniform(0,1)
-			print("Checking to swap...")
+			#print("Checking to swap...")
 			if u < swap_proposal:
 				
-				print('SWAPPED, u',u,' for',swap_proposal)
+				#print('SWAPPED, u',u,' for',swap_proposal)
 				self.num_swap += 1
 				param_temp =  param1
 				param1 = param2
@@ -1078,6 +1078,10 @@ class ParallelTempering:
 		model.input.SPLm = input_vector[2] 
 		model.input.SPLn = input_vector[3] 
 
+                if self.num_param > 4:  # will work for more parameters
+                        model.input.CDm = input_vector[4] # submarine diffusion
+                        model.input.CDa = input_vector[5] # aerial diffusion
+
 		elev_vec = collections.OrderedDict()
 		erodep_vec = collections.OrderedDict()
 		erodep_pts_vec = collections.OrderedDict()
@@ -1346,8 +1350,8 @@ def main():
 
 		likelihood_sediment = True
 
-		maxlimits_vec = [3.0,7.e-5, 2, 2]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-5, 0, 0]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+		maxlimits_vec = [3.0,7.e-5,m , n]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+		minlimits_vec = [0.0 ,3.e-5, m, n]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
 									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
 									#if you want to freeze a parameter, keep max and min limits the same
@@ -1410,27 +1414,33 @@ def main():
 		simtime = 500000
 		resolu_factor = 1.5
 
-
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') # make sure that this is updated in case when you intro more parameters. should have as many rows as parameters
 		 
+#Set variables
+                m = 0.5
+                m_min = 0.
+                m_max = 2.
 
-		m = 0.5 # used to be constants  
-		n = 1
+                n = 1.
+                n_min = 0.
+                n_max = 2.
 
-		real_rain = 1.5
-		real_erod = 5.e-6
+                rain_real = 1.5
+                rain_min = 0.
+                rain_max = 3.
 
-		real_caerial = 8.e-1 
-		
-		real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
+                erod_real = 5.e-6
+                erod_min = 3.e-6
+                erod_max = 7.e-6
+
+		#Fix the variables here.
+                minlimits_vec=[rain_min,erod_min,m,n]
+                maxlimits_vec=[rain_max,erod_max,m,n]
 
 		likelihood_sediment = True
+		
+		## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
-		maxlimits_vec = [3.0,7.e-6, 2, 2, 1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-		minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
-									## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
-
-									#if you want to freeze a parameter, keep max and min limits the same
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
  
 		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
@@ -1452,7 +1462,7 @@ def main():
 		problemfolder = 'Examples/etopo/'
 		xmlinput = problemfolder + 'etopo.xml'
 		simtime = 1000000
-		resolu_factor = 1000
+		resolu_factor = 1
 
 		true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 		 
@@ -1462,13 +1472,10 @@ def main():
 		real_rain = 1.5
 		real_erod = 5.e-5
 
-
 		likelihood_sediment = True
 
 		real_caerial = 8.e-1 
-		
 		real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
-
 
 		maxlimits_vec = [3.0,7.e-6, 2, 2,  1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
 		minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
@@ -1505,40 +1512,46 @@ def main():
         elif problem == 6:
                 problemfolder = 'Examples/mountain/'
                 xmlinput = problemfolder + 'mountain.xml'
-                simtime = 50000
-                resolu_factor = 1.5
+                simtime = 5000000
+                resolu_factor = 1
 
-
-                true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') # make sure that this is updated in case when you intro more parameters. should have as many rows as parameters
-
-
-                m = 0.5 # used to be constants  
-                n = 1
-
-                real_rain = 1.5
-                real_erod = 5.e-6
-
-                real_caerial = 8.e-1
-
-                real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
+		#update with additonal parameters. should have as many rows as parameters
+                true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
 
                 likelihood_sediment = True
+		
+		#Set variables
+                #m = 0.5
+		m_min = 0.
+		m_max = 2.
 
-                maxlimits_vec = [[3.0,2.0],7.e-6, 2, 2, 1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-                minlimits_vec = [[0.0,1.0] ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
-                                                                        ## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
+		#n = 1.
+		n_min = 0.
+		n_max = 2.
 
-                                                                        #if you want to freeze a parameter, keep max and min limits the same
-                vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
+                #rain_real = 1.5
+		rain_min = 0.
+		rain_max = 3.
+                
+		#erod_real = 5.e-6
+		erod_min = 3.e-6
+		erod_max = 7.e-6
 
-                stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		minlimits_vec=[rain_min,erod_min,m_min,n_min]
+		maxlimits_vec=[rain_max,erod_max,m_max,n_max]
 
-                stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) #[stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
+                #  draw intial values for each of the free parameters
+		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
 
                 num_param = vec_parameters.size
+		
+		#you can have different ratio values for different parameters depending on the problem.
+		stepsize_ratio  = 0.02 
+                stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
 
 
-                erodep_coords =  np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]]) # need to hand pick given your problem
+		# need to hand pick given your problem
+                erodep_coords =  np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]]) 
 
                 if (true_parameter_vec.shape[0] != vec_parameters.size ):
                         print( ' seems your true parameters file in data folder is not updated with true values of your parameters.  ')

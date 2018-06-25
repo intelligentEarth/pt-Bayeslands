@@ -21,9 +21,25 @@
         <!-- Simulation end time [a] -->
         <end>1000000.</end>
         <!-- Display interval [a] -->
-        <display>10000.</display>
+        <display>250000.</display>
     </time>
 
+    <!-- Tectonic structure -->
+    <tectonic>
+        <!-- Is 3D displacements on ? (1:on - 0:off). Default is 0.-->
+        <disp3d>0</disp3d>
+        <!-- Number of tectonic events -->
+        <events>1</events>
+        <!-- Displacement definition -->
+        <disp>
+            <!-- Displacement start time [a] -->
+            <dstart>0.</dstart>
+            <!-- Displacement end time [a] -->
+            <dend>50000000.0</dend>
+            <!-- Displacement map [m] -->
+            <dfile>Examples/mountain/data/uplift.csv</dfile>
+        </disp>
+    </tectonic>
 
     <!-- Precipitation structure -->
     <precipitation>
@@ -34,12 +50,10 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>10000.</rend>
+            <rend>1000000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
-            <rval>1.</rval>
+            <rval>1.5</rval>
         </rain>
-        
-   
     </precipitation>
 
     <!-- Stream power law parameters:
@@ -50,7 +64,7 @@
     <sp_law>
         <!-- Make the distinction between purely erosive models (0) and erosion /
             deposition ones (1). Default value is 1 -->
-<!--         <dep>0</dep> -->
+        <dep>0</dep>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -62,12 +76,6 @@
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
         <erodibility>5.e-6</erodibility>
-        <!-- Number of steps used to distribute marine deposit.
-             Default value is 5 (integer). -->
-        <diffnb>10</diffnb>
-        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
-             to be set between ]0,1[. Default value is 0.9 (optional). -->
-        <diffprop>0.05</diffprop>
     </sp_law>
 
     <!-- Linear slope diffusion parameters:

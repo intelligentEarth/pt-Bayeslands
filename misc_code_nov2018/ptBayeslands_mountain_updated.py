@@ -662,7 +662,8 @@ class ParallelTempering:
             try:
                 swap_proposal = min(1, 0.5*math.exp(lhood1-lhood2))
             except OverflowError as e:
-                print("overflow")
+                #print("overflow")
+                #overflow = overflow + 1
                 swap_proposal = 1
             
             #print("Swaps are, old: ", swap_proposal, " new: ", swap_proposal2, "T1: ", T1, "T2: ", T2, "param1:", param1, self.num_param)
@@ -671,7 +672,7 @@ class ParallelTempering:
             
             #print("Checking to swap...",u,swap_proposal)
             if u < swap_proposal:
-                print('SWAPPED, u',u,' for',swap_proposal)
+                #print('SWAPPED, u',u,' for',swap_proposal)
                 self.num_swap += 1
                 param_temp =  param1
                 param1 = param2

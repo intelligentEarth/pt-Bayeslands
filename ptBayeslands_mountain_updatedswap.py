@@ -371,7 +371,7 @@ class ptReplica(multiprocessing.Process):
 
 			u = random.uniform(0,1)
 			accept_list[i+1] = num_accepted
-			likeh_list[i+1,0] = likelihood_proposal
+			likeh_list[i+1,0] = likl_without_temp # likelihood_proposal
 
 			#print((i % self.swap_interval), i,  self.swap_interval, ' mod swap')
 
@@ -948,8 +948,8 @@ class ParallelTempering:
 
 		timespan_erodep = np.zeros((self.sim_interval.size,  (self.NumSamples - burnin) * self.num_chains, self.real_erodep_pts.shape[1] ))
 
-		rmse_elev = np.zeros((self.num_chains, self.samples-burnin))
-		rmse_erodep = np.zeros((self.num_chains, self.samples-burnin))
+		rmse_elev = np.zeros((self.num_chains, self.NumSamples-burnin))
+		rmse_erodep = np.zeros((self.num_chains, self.NumSamples-burnin))
 
 
 
@@ -1006,8 +1006,8 @@ class ParallelTempering:
 		xslice = list_xslice.transpose(2,0,1).reshape(self.real_elev.shape[1],-1) 
 		yslice = list_yslice.transpose(2,0,1).reshape(self.real_elev.shape[0],-1)
 
-		rmse_elev = rmse_elev.reshape(self.num_chains*(self.samples - burnin),1)
-		rmse_erodep = rmse_erodep.reshape(self.num_chains*(self.samples - burnin),1)
+		rmse_elev = rmse_elev.reshape(self.num_chains*(self.NumSamples - burnin),1)
+		rmse_erodep = rmse_erodep.reshape(self.num_chains*(self.NumSamples - burnin),1)
 
 		likelihood_vec = likehood_rep.transpose(2,0,1).reshape(2,-1) 
 
@@ -1346,7 +1346,7 @@ def main():
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 		
 		
-		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.05 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
 
@@ -1473,7 +1473,7 @@ def main():
 		vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 	
 	
-		stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+		stepsize_ratio  = 0.05 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
 		stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
 		num_param = vec_parameters.size
@@ -1592,12 +1592,12 @@ def main():
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
 	num_chains = int(sys.argv[3]) #8  
-	swap_ratio = 0.05   #adapt these 
+	swap_ratio = float(sys.argv[5])   #adapt these 
 	burn_in =0.3
 	num_successive_topo = 4
 
 	#parameters for Parallel Tempering
-	maxtemp = num_chains 
+	maxtemp = int(sys.argv[4])
 
 	print("Max temp: ", maxtemp)
 	print("Samples: ", samples)
@@ -1675,16 +1675,16 @@ def main():
 
 
 	resultingfile_db = open(problemfolder+'/master_result_file.txt','a+')  
-	outres_db = open(problemfolder+'/result.txt', "a+")
+	#outres_db = open(problemfolder+'/result.txt', "a+")
 
 
 	xv = name+'_'+ str(run_nb) 
 	allres =  np.asarray([ problem, num_chains, maxtemp, samples,swap_interval,  rmse_el, 
 						  rmse_er, rmse_el_std, rmse_er_std, rmse_el_min, 
-						  rmse_er_min, rmse, rmse_sed, swap_perc, accept_per, timetotal]) 
+						  rmse_er_min, rmse, rmse_sed, swap_perc, accept_per, time_total]) 
 	print(allres, '  result')
 		 
-	np.savetxt(outres_db,  allres   , fmt='%1.4f', newline=' '  )   
+	#np.savetxt(outres_db,  allres   , fmt='%1.4f', newline=' '  )   
 	np.savetxt(resultingfile_db,   allres   , fmt='%1.4f',  newline=' ' ) 
 	np.savetxt(resultingfile_db, [xv]   ,  fmt="%s", newline=' \n' )  
 

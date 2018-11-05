@@ -497,6 +497,10 @@ class ptReplica(multiprocessing.Process):
 					except:
 						print ('error')
 
+				else:
+					print("Khali - swap bug fix by Arpit Kapoor ")
+				self.event.clear()
+
 		 
 		accepted_count =  len(count_list) 
 		accept_ratio = accepted_count / (samples * 1.0) * 100
@@ -692,120 +696,50 @@ class ParallelTempering:
 		#flag_running = True 
 
 		
-		while True:          
-
-			#-------------------------------------------------------------------------------------
-			# wait for chains to complete one pass through the samples
-			#-------------------------------------------------------------------------------------
-
-			for j in range(0,self.num_chains): 
-				#print (j, ' - waiting')
-				self.wait_chain[j].wait()
-				#print ("finished waiting")	
-
-			
-			#-------------------------------------------------------------------------------------
-			#get info from chains
-			#-------------------------------------------------------------------------------------
-			
-			#for j in range(0,self.num_chains): 
-			#	if self.chain_parameters[j].empty() is False :
-			#		result =  self.chain_parameters[j].get()
-			#		replica_param[j,:] = result[0:self.num_param]   
-			#		lhood[j] = result[self.num_param]
- 
- 
-
-			# create swapping proposals between adjacent chains
-			#for k in range(0, self.num_chains-1): 
-			#	swap_proposal[k]=  (lhood[k]/[1 if lhood[k+1] == 0 else lhood[k+1]])*(1/self.tempratures[k] * 1/self.tempratures[k+1])
-
-			#print(' before  swap_proposal  --------------------------------------+++++++++++++++++++++++=-')
-
-			#for l in range( self.num_chains-1, 0, -1):
-			#	#u = 1
-			#	u = random.uniform(0, 1)
-			#	swap_prob = swap_proposal[l-1]
-
-
-
-			#	if u < swap_prob : 
-
-			#		number_exchange[l] = number_exchange[l] +1  
-
-			#		others = np.asarray([  lhood[l-1] ]  ) 
-			#		para = np.concatenate([replica_param[l-1,:],others])   
- 
-				   
-			#		self.chain_parameters[l].put(para) 
-
-			#		others = np.asarray([ lhood[l] ] )
-			#		param = np.concatenate([replica_param[l,:],others])
- 
-			#		self.chain_parameters[l-1].put(param)
-					
-			#	else:
-
-
-			#		others = np.asarray([  lhood[l-1] ])
-			#		para = np.concatenate([replica_param[l-1,:],others]) 
- 
-				   
-			#		self.chain_parameters[l-1].put(para) 
-
-			#		others = np.asarray([  lhood[l]  ])
-			#		param = np.concatenate([replica_param[l,:],others])
- 
-			#		self.chain_parameters[l].put(param)
-
-
-			#-------------------------------------------------------------------------------------
-			# resume suspended process
-			#-------------------------------------------------------------------------------------
-			#for k in range (self.num_chains):
-			#		self.event[k].set()
-			for k in range(0,self.num_chains-1):
-				#print('starting swap')
-				self.chain_queue.put(self.swap_procedure(self.parameter_queue[k],self.parameter_queue[k+1])) 
-				while True:
-					if self.chain_queue.empty():
-						self.chain_queue.task_done()
-						#print(k,'EMPTY QUEUE')
-						break
-					swap_process = self.chain_queue.get()
-					#print(swap_process)
-					if swap_process is None:
-						self.chain_queue.task_done()
-						#print(k,'No Process')
-						break
-					param1, param2 = swap_process
-					#self.chain_queue.task_done()
-					self.parameter_queue[k].put(param1)
-					self.parameter_queue[k+1].put(param2)
-			for k in range (self.num_chains):
-					#print(k)
-					self.event[k].set()					
-
-			#-------------------------------------------------------------------------------------
-			#check if all chains have completed runing
-			#-------------------------------------------------------------------------------------
+		while True:
 			count = 0
-			for i in range(self.num_chains):
-				if self.chains[i].is_alive() is False:
+			for index in range(self.num_chains):
+				if not self.chains[index].is_alive():
 					count+=1
-			#		while self.chain_parameters[i].empty() is False:
-			#			dummy = self.chain_parameters[i].get()
+					print(str(self.chains[index].temperature) +" Dead")
 
-			if count == self.num_chains :
+			if count == self.num_chains:
 				break
-				#flag_running = False
-			
+			print("Waiting")
+			timeout_count = 0
+			for index in range(0,self.num_chains):
+				print("Waiting for chain: {}".format(index+1))
+				flag = self.wait_chain[index].wait(timeout=5)
+				if flag:
+					print("Signal from chain: {}".format(index+1))
+					timeout_count += 1
 
-		#-------------------------------------------------------------------------------------
-		#wait for all processes to jin the main process
-		#-------------------------------------------------------------------------------------     
-		for j in range(0,self.num_chains): 
-			self.chains[j].join()
+			if timeout_count != self.num_chains:
+				print("Skipping the swap!")
+				continue
+			print("Event occured")
+			for index in range(0,self.num_chains-1):
+				print('starting swap')
+				try:
+					param_1, param_2, swapped = self.swap_procedure(self.parameter_queue[index],self.parameter_queue[index+1])
+					self.parameter_queue[index].put(param_1)
+					self.parameter_queue[index+1].put(param_2)
+					if index == 0:
+						if swapped:
+							swaps_appected_main += 1
+						total_swaps_main += 1
+				except:
+					print("Nothing Returned by swap method!")
+			for index in range (self.num_chains):
+					self.event[index].set()
+					self.wait_chain[index].clear()
+
+		print("Joining processes")
+
+		#JOIN THEM TO MAIN PROCESS
+		for index in range(0,self.num_chains):
+			self.chains[index].join()
+		self.chain_queue.join()
 
 		print(number_exchange, 'num_exchange, process ended')
 
@@ -1436,7 +1370,7 @@ def main():
 		real_caerial = 8.e-1 
 		
 		real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
-		
+
 		maxlimits_vec = [3.0,7.e-6, 2, 2, 1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
 		minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ] 
 		#Fix the variables here.

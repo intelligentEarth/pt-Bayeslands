@@ -98,7 +98,7 @@ class ptReplica(multiprocessing.Process):
 
 		#self.realvalues_vec = np.asarray(realvalues_vec) # true values of free parameters for comparision. Note this will not be avialable in real world application		 
 
-		self.check_likehood_sed =  check_likelihood_sed
+		self.check_likelihood_sed =  check_likelihood_sed
 
 		self.real_erodep_pts = real_erodep_pts
 		#self.real_erodep =  real_erodep  # this is 3D eroddep - this will barely be used in likelihood - so there is no need for it
@@ -114,6 +114,8 @@ class ptReplica(multiprocessing.Process):
 		self.sim_interval = sim_interval
 
 		self.sedscalingfactor = 50 # this is to ensure that the sediment likelihood is given more emphasis as it considers fewer points (dozens of points) when compared to elev liklihood (thousands of points)
+
+		self.adapttemp =  self.temperature
 
 	def interpolateArray(self, coords=None, z=None, dz=None):
 		"""
@@ -197,37 +199,40 @@ class ptReplica(multiprocessing.Process):
 
 
 		return elev_vec, erodep_vec, erodep_pts_vec
+ 
 
 	def likelihood_func(self,input_vector ):
-
-		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector )
-
-		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size 
-
-		tau_erodep =  np.zeros(self.sim_interval.size) 
+		#print("Running likelihood function: ", input_vector)
 		
+		pred_elev_vec, pred_erodep_vec, pred_erodep_pts_vec = self.run_badlands(input_vector )
+		tausq = np.sum(np.square(pred_elev_vec[self.simtime] - self.real_elev))/self.real_elev.size 
+		tau_erodep =  np.zeros(self.sim_interval.size) 
+		#print(self.sim_interval.size, self.real_erodep_pts.shape)
 		for i in range(  self.sim_interval.size):
 			tau_erodep[i]  =  np.sum(np.square(pred_erodep_pts_vec[self.sim_interval[i]] - self.real_erodep_pts[i]))/ self.real_erodep_pts.shape[1]
- 
-	
-		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq 
 
+		likelihood_elev = - 0.5 * np.log(2 * math.pi * tausq) - 0.5 * np.square(pred_elev_vec[self.simtime] - self.real_elev) / tausq 
 		likelihood_erodep = 0 
 		
-		if self.check_likehood_sed  == True: 
+		if self.check_likelihood_sed  == True: 
 
 			for i in range(1, self.sim_interval.size):
 				likelihood_erodep  += np.sum(-0.5 * np.log(2 * math.pi * tau_erodep[i]) - 0.5 * np.square(pred_erodep_pts_vec[self.sim_interval[i]] - self.real_erodep_pts[i]) / tau_erodep[i]) # only considers point or core of erodep
-		 
-
+		
 			likelihood = np.sum(likelihood_elev) +  (likelihood_erodep * self.sedscalingfactor)
-
-			#print(likelihood_erodep, likelihood, ' Likelihood ero-dep - Likelihood')
+			#print('Check Likelihood erodep: ',likelihood_erodep, ' and Likelihood: ', likelihood)
 
 		else:
 			likelihood = np.sum(likelihood_elev)
 
-		return [likelihood *(1.0/self.temperature), pred_elev_vec,   pred_erodep_pts_vec]
+		rmse_elev = np.sqrt(tausq)
+		rmse_erodep = np.sqrt(tau_erodep) 
+		avg_rmse_er = np.average(rmse_erodep)
+
+		#print ('avg_tausq_elev               ------------>>>>>>', rmse_elev,  avg_rmse_el, rmse_erodep, avg_rmse_er)
+
+		return [likelihood *(1.0/self.adapttemp), pred_elev_vec, pred_erodep_pts_vec, likelihood, rmse_elev, avg_rmse_er]
+   
 
  
 
@@ -265,7 +270,7 @@ class ptReplica(multiprocessing.Process):
  
 		#calc initial likelihood with initial parameters
  
-		[likelihood, predicted_elev,  pred_erodep_pts] = self.likelihood_func(v_current )
+		[likelihood, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_current )
 
 		print('\tinitial likelihood:', likelihood)
  
@@ -325,6 +330,15 @@ class ptReplica(multiprocessing.Process):
 
 		num_div = 0 
 
+
+		pt_samples = samples * 0.5 # this means that PT in canonical form with adaptive temp will work till pt  samples are reached
+
+		init_count = 0
+
+
+		rmse_elev  = np.zeros(samples)
+		rmse_erodep = np.zeros(samples)
+
 		#save
 
 		with file(('%s/description.txt' % (self.filename)),'a') as outfile:
@@ -342,6 +356,15 @@ class ptReplica(multiprocessing.Process):
 
 			print (self.temperature, ' - Sample : ', i)
 
+			if i < pt_samples:
+				self.adapttemp =  self.temperature #* ratio  #
+
+			if i == pt_samples and init_count ==0: # move to MCMC canonical
+				self.adapttemp = 1
+				[likelihood, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal) 
+				init_count = 1
+
+
 			# Update by perturbing all the  parameters via "random-walk" sampler and check limits
 			v_proposal =  np.random.normal(v_current,stepsize_vec)
 
@@ -353,7 +376,7 @@ class ptReplica(multiprocessing.Process):
 
 			#print(v_proposal)  
 			# Passing paramters to calculate likelihood and rmse with new tau
-			[likelihood_proposal, predicted_elev,  pred_erodep_pts] = self.likelihood_func(v_proposal)
+			[likelihood_proposal, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal)
 
 			final_predtopo= predicted_elev[self.simtime]
 			pred_erodep = pred_erodep_pts[self.simtime]
@@ -396,6 +419,10 @@ class ptReplica(multiprocessing.Process):
 
 				list_erodep[i+1,:] = pred_erodep
 
+
+				rmse_elev[i+1,] = avg_rmse_el
+				rmse_erodep[i+1,] = avg_rmse_er
+
 				for x in range(self.sim_interval.size): 
 					list_erodep_time[i+1,x, :] = pred_erodep_pts[self.sim_interval[x]]
 
@@ -428,6 +455,9 @@ class ptReplica(multiprocessing.Process):
  
 				list_erodep_time[i+1,:, :] = list_erodep_time[i,:, :]
 
+
+				rmse_elev[i+1,] = rmse_elev[i,] 
+				rmse_erodep[i+1,] = rmse_erodep[i,]
 			
  
  
@@ -535,7 +565,13 @@ class ptReplica(multiprocessing.Process):
 		np.savetxt(file_name, [accept_ratio], fmt='%1.2f')
 
 		file_name = self.filename + '/posterior/accept_list/chain_' + str(self.temperature) + '.txt'
-		np.savetxt(file_name, accept_list, fmt='%1.2f')
+		np.savetxt(file_name, accept_list, fmt='%1.2f') 
+
+		file_name = self.filename+'/posterior/rmse_elev_chain_'+ str(self.temperature)+ '.txt'
+		np.savetxt(file_name, rmse_elev, fmt='%1.2f')		
+	
+		file_name = self.filename+'/posterior/rmse_erodep_chain_'+ str(self.temperature)+ '.txt'
+		np.savetxt(file_name, rmse_erodep, fmt='%1.2f')
  
 
 		for s in range(self.sim_interval.size):  
@@ -567,7 +603,7 @@ class ParallelTempering:
 		self.num_swap = 0
 		self.num_chains = num_chains
 		self.chains = []
-		self.tempratures = []
+		self.temperatures = []
 		self.NumSamples = int(NumSample/self.num_chains)
 		self.sub_sample_size = max(1, int( 0.05* self.NumSamples))
 
@@ -604,17 +640,111 @@ class ParallelTempering:
 		# two ways events are used to synchronize chains
 		self.event = [multiprocessing.Event() for i in range (self.num_chains)]
 		#self.wait_chain = [multiprocessing.Event() for i in range (self.num_chains)]
+
+		self.geometric =  True
+
+		self.total_swap_proposals = 0
+
+	def default_beta_ladder(self, ndim, ntemps, Tmax): #https://github.com/konqr/ptemcee/blob/master/ptemcee/sampler.py
+		"""
+		Returns a ladder of :math:`\beta \equiv 1/T` under a geometric spacing that is determined by the
+		arguments ``ntemps`` and ``Tmax``.  The temperature selection algorithm works as follows:
+		Ideally, ``Tmax`` should be specified such that the tempered posterior looks like the prior at
+		this temperature.  If using adaptive parallel tempering, per `arXiv:1501.05823
+		<http://arxiv.org/abs/1501.05823>`_, choosing ``Tmax = inf`` is a safe bet, so long as
+		``ntemps`` is also specified.
+		 
+		"""
+
+		if type(ndim) != int or ndim < 1:
+			raise ValueError('Invalid number of dimensions specified.')
+		if ntemps is None and Tmax is None:
+			raise ValueError('Must specify one of ``ntemps`` and ``Tmax``.')
+		if Tmax is not None and Tmax <= 1:
+			raise ValueError('``Tmax`` must be greater than 1.')
+		if ntemps is not None and (type(ntemps) != int or ntemps < 1):
+			raise ValueError('Invalid number of temperatures specified.')
+
+		tstep = np.array([25.2741, 7., 4.47502, 3.5236, 3.0232,
+						  2.71225, 2.49879, 2.34226, 2.22198, 2.12628,
+						  2.04807, 1.98276, 1.92728, 1.87946, 1.83774,
+						  1.80096, 1.76826, 1.73895, 1.7125, 1.68849,
+						  1.66657, 1.64647, 1.62795, 1.61083, 1.59494,
+						  1.58014, 1.56632, 1.55338, 1.54123, 1.5298,
+						  1.51901, 1.50881, 1.49916, 1.49, 1.4813,
+						  1.47302, 1.46512, 1.45759, 1.45039, 1.4435,
+						  1.4369, 1.43056, 1.42448, 1.41864, 1.41302,
+						  1.40761, 1.40239, 1.39736, 1.3925, 1.38781,
+						  1.38327, 1.37888, 1.37463, 1.37051, 1.36652,
+						  1.36265, 1.35889, 1.35524, 1.3517, 1.34825,
+						  1.3449, 1.34164, 1.33847, 1.33538, 1.33236,
+						  1.32943, 1.32656, 1.32377, 1.32104, 1.31838,
+						  1.31578, 1.31325, 1.31076, 1.30834, 1.30596,
+						  1.30364, 1.30137, 1.29915, 1.29697, 1.29484,
+						  1.29275, 1.29071, 1.2887, 1.28673, 1.2848,
+						  1.28291, 1.28106, 1.27923, 1.27745, 1.27569,
+						  1.27397, 1.27227, 1.27061, 1.26898, 1.26737,
+						  1.26579, 1.26424, 1.26271, 1.26121,
+						  1.25973])
+
+		if ndim > tstep.shape[0]:
+			# An approximation to the temperature step at large
+			# dimension
+			tstep = 1.0 + 2.0*np.sqrt(np.log(4.0))/np.sqrt(ndim)
+		else:
+			tstep = tstep[ndim-1]
+
+		appendInf = False
+		if Tmax == np.inf:
+			appendInf = True
+			Tmax = None
+			ntemps = ntemps - 1
+
+		if ntemps is not None:
+			if Tmax is None:
+				# Determine Tmax from ntemps.
+				Tmax = tstep ** (ntemps - 1)
+		else:
+			if Tmax is None:
+				raise ValueError('Must specify at least one of ``ntemps'' and '
+								 'finite ``Tmax``.')
+
+			# Determine ntemps from Tmax.
+			ntemps = int(np.log(Tmax) / np.log(tstep) + 2)
+
+		betas = np.logspace(0, -np.log10(Tmax), ntemps)
+		if appendInf:
+			# Use a geometric spacing, but replace the top-most temperature with
+			# infinity.
+			betas = np.concatenate((betas, [0]))
+
+		return betas
+		
+	def assign_temperatures(self):
+		# #Linear Spacing
+		# temp = 2
+		# for i in range(0,self.num_chains):
+		# 	self.temperatures.append(temp)
+		# 	temp += 2.5 #(self.maxtemp/self.num_chains)
+		# 	print (self.temperatures[i])
+		#Geometric Spacing
+
+		if self.geometric == True:
+			betas = self.default_beta_ladder(2, ntemps=self.num_chains, Tmax=self.maxtemp)      
+			for i in range(0, self.num_chains):         
+				self.temperatures.append(np.inf if betas[i] is 0 else 1.0/betas[i])
+				print (self.temperatures[i])
+		else:
  
+			tmpr_rate = (self.maxtemp /self.num_chains)
+			temp = 1
+			for i in xrange(0, self.num_chains):            
+				self.temperatures.append(temp)
+				temp += tmpr_rate
+				print(self.temperatures[i])
 
 	
-	# assigin tempratures dynamically   
-	def assign_temptarures(self):
-		tmpr_rate = (self.maxtemp /self.num_chains)
-		temp = 1
-		for i in xrange(0, self.num_chains):            
-			self.tempratures.append(temp)
-			temp += tmpr_rate
-			print(self.tempratures[i])
+ 
 			
 	 
 	def initialize_chains (self,     minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed,   burn_in):
@@ -622,10 +752,9 @@ class ParallelTempering:
  
 		self.vec_parameters =   np.random.uniform(minlimits_vec, maxlimits_vec) # will begin from diff position in each replica (comment if not needed)
 
-
-		self.assign_temptarures()
+		self.assign_temperatures()
 		for i in xrange(0, self.num_chains):
-			self.chains.append(ptReplica( self.num_param, self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.tempratures[i], self.parameter_queue[i],self.event[i], self.wait_chain[i],burn_in))
+			self.chains.append(ptReplica( self.num_param, self.vec_parameters, minlimits_vec, maxlimits_vec, stepratio_vec,  check_likelihood_sed ,self.swap_interval, self.sim_interval,   self.simtime, self.NumSamples, self.real_elev,   self.real_erodep_pts, self.erodep_coords, self.folder, self.xmlinput,  self.run_nb,self.temperatures[i], self.parameter_queue[i],self.event[i], self.wait_chain[i],burn_in))
 			
 	def swap_procedure(self, parameter_queue_1, parameter_queue_2):
 		#print (parameter_queue_2, ", param1:",parameter_queue_1)
@@ -646,15 +775,16 @@ class ParallelTempering:
 			swap_proposal =  (lhood1/[1 if lhood2 == 0 else lhood2])*(1/T1 * 1/T2)
 			u = np.random.uniform(0,1)
 			#print("Checking to swap...")
-			if u < swap_proposal:
-				
-				#print('SWAPPED, u',u,' for',swap_proposal)
+			if u < swap_proposal: 
+				self.total_swap_proposals += 1
 				self.num_swap += 1
 				param_temp =  param1
 				param1 = param2
 				param2 = param_temp
-			return param1, param2
+			return param1, param2 
+
 		else:
+			self.total_swap_proposals += 1
 			return		
 	
 
@@ -744,7 +874,7 @@ class ParallelTempering:
 		print(number_exchange, 'num_exchange, process ended')
 
 
-		pos_param, likelihood_rep, accept_list, pred_topo,  combined_erodep, accept, pred_topofinal, list_xslice, list_yslice = self.show_results('chain_')
+		pos_param, likelihood_rep, accept_list, pred_topo,  combined_erodep, accept, pred_topofinal, list_xslice, list_yslice, rmse_elev, rmse_erodep = self.show_results('chain_')
  
 
  
@@ -784,10 +914,12 @@ class ParallelTempering:
 
 			self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
 
-			
+	
+
+		swap_perc = self.num_swap*100/self.total_swap_proposals  
 			
 
-		return (pos_param,likelihood_rep, accept_list,   combined_erodep,  pred_topofinal)
+		return (pos_param,likelihood_rep, accept_list,   combined_erodep,  pred_topofinal, swap_perc, accept,  rmse_elev, rmse_erodep)
 
 	def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
 		print ('list_xslice', list_xslice.shape)
@@ -894,41 +1026,54 @@ class ParallelTempering:
 		combined_erodep = np.zeros((self.sim_interval.size, self.num_chains, self.NumSamples - burnin, self.real_erodep_pts.shape[1] ))
 
 		timespan_erodep = np.zeros((self.sim_interval.size,  (self.NumSamples - burnin) * self.num_chains, self.real_erodep_pts.shape[1] ))
+
+		rmse_elev = np.zeros((self.num_chains, self.NumSamples-burnin))
+		rmse_erodep = np.zeros((self.num_chains, self.NumSamples-burnin))
+
  
  
 		for i in range(self.num_chains):
-			file_name = self.folder + '/posterior/pos_parameters/'+filename + str(self.tempratures[i]) + '.txt'
+			file_name = self.folder + '/posterior/pos_parameters/'+filename + str(self.temperatures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			pos_param[i, :, :] = dat[burnin:,:]
   
-			file_name = self.folder + '/posterior/predicted_topo/chain_xslice_'+  str(self.tempratures[i]) + '.txt'
+			file_name = self.folder + '/posterior/predicted_topo/chain_xslice_'+  str(self.temperatures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			list_xslice[i, :, :] = dat[burnin:,:] 
 
-			file_name = self.folder + '/posterior/predicted_topo/chain_yslice_'+  str(self.tempratures[i]) + '.txt'
+			file_name = self.folder + '/posterior/predicted_topo/chain_yslice_'+  str(self.temperatures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			list_yslice[i, :, :] = dat[burnin:,:] 
 
-			file_name = self.folder + '/posterior/pos_likelihood/'+filename + str(self.tempratures[i]) + '.txt'
+			file_name = self.folder + '/posterior/pos_likelihood/'+filename + str(self.temperatures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			likehood_rep[i, :] = dat[burnin:]
 
-			file_name = self.folder + '/posterior/accept_list/' + filename + str(self.tempratures[i]) + '.txt'
+			file_name = self.folder + '/posterior/accept_list/' + filename + str(self.temperatures[i]) + '.txt'
 			dat = np.loadtxt(file_name) 
 			accept_list[i, :] = dat 
 
-			file_name = self.folder + '/posterior/accept_list/' + filename + str(self.tempratures[i]) + '_accept.txt'
+			file_name = self.folder + '/posterior/accept_list/' + filename + str(self.temperatures[i]) + '_accept.txt'
 			dat = np.loadtxt(file_name) 
 			accept_percent[i, :] = dat
+
+			file_name = self.folder+'/posterior/rmse_elev_chain_'+ str(self.temperatures[i])+ '.txt'
+			dat = np.loadtxt(file_name)
+			rmse_elev[i,:] = dat[burnin:]
+
+			file_name = self.folder+'/posterior/rmse_erodep_chain_'+ str(self.temperatures[i])+ '.txt'
+			dat = np.loadtxt(file_name)
+			rmse_erodep[i,:] = dat[burnin:]
+
  
 
 			for j in range(self.sim_interval.size):
 
-				file_name = self.folder+'/posterior/predicted_topo/chain_'+str(self.sim_interval[j])+'_'+ str(self.tempratures[i])+ '.txt'
+				file_name = self.folder+'/posterior/predicted_topo/chain_'+str(self.sim_interval[j])+'_'+ str(self.temperatures[i])+ '.txt'
 				dat_topo = np.loadtxt(file_name)
 				replica_topo[j,i,:,:] = dat_topo
 
-				file_name = self.folder+'/posterior/predicted_erodep/chain_'+str(self.sim_interval[j])+'_'+ str(self.tempratures[i])+ '.txt'
+				file_name = self.folder+'/posterior/predicted_erodep/chain_'+str(self.sim_interval[j])+'_'+ str(self.temperatures[i])+ '.txt'
 				dat_erodep = np.loadtxt(file_name)
 				combined_erodep[j,i,:,:] = dat_erodep[burnin:,:]
  
@@ -937,7 +1082,10 @@ class ParallelTempering:
 
 		posterior = pos_param.transpose(2,0,1).reshape(self.num_param,-1)    
 		xslice = list_xslice.transpose(2,0,1).reshape(self.real_elev.shape[1],-1) 
-		yslice = list_yslice.transpose(2,0,1).reshape(self.real_elev.shape[0],-1)
+		yslice = list_yslice.transpose(2,0,1).reshape(self.real_elev.shape[0],-1) 
+
+		rmse_elev = rmse_elev.reshape(self.num_chains*(self.NumSamples - burnin),1)
+		rmse_erodep = rmse_erodep.reshape(self.num_chains*(self.NumSamples - burnin),1)
  
 
 		likelihood_vec = likehood_rep.transpose(2,0,1).reshape(2,-1) 
@@ -965,7 +1113,7 @@ class ParallelTempering:
   
 		np.savetxt(self.folder + '/acceptpercent.txt', [accept], fmt='%1.2f')
 
-		return posterior, likelihood_vec.T, accept_list, combined_topo,   timespan_erodep, accept, pred_topofinal, xslice, yslice
+		return posterior, likelihood_vec.T, accept_list, combined_topo,   timespan_erodep, accept, pred_topofinal, xslice, yslice, rmse_elev, rmse_erodep
 
 
 	def find_nearest(self, array,value): # just to find nearest value of a percentile (5th or 9th from pos likelihood)
@@ -1516,16 +1664,16 @@ def main():
 	# Choose a value less than the numbe of core available (avoid context swtiching)
 	#-------------------------------------------------------------------------------------
 	num_chains = int(sys.argv[3]) #8  
-	swap_ratio = 0.1   #adapt these 
-	burn_in =0.1 
+	swap_ratio = 0.05   #adapt these 
+	burn_in =0.3 
 	num_successive_topo = 4
 
 
  
 
 	#parameters for Parallel Tempering
-	maxtemp = int(num_chains * 5)/2
-	
+	maxtemp =  num_chains  
+
 	swap_interval =   int(swap_ratio * (samples/num_chains)) #how ofen you swap neighbours
 	print(swap_interval, ' swap')
 
@@ -1551,7 +1699,7 @@ def main():
 	#-------------------------------------------------------------------------------------
 	#run the chains in a sequence in ascending order
 	#-------------------------------------------------------------------------------------
-	pos_param,likehood_rep, accept_list,   combined_erodep, pred_elev  = pt.run_chains()
+	pos_param,likehood_rep, accept_list,   combined_erodep, pred_elev,  swap_perc, accept_per,  rmse_elev, rmse_erodep  = pt.run_chains()
 
 
 
@@ -1610,6 +1758,41 @@ def main():
 	plt.savefig(fname+'/badlands_pos.svg', format='svg', dpi=400)
 	 
 	print (num_chains, problemfolder, run_nb_str, (timer_end-timer_start)/60, rmse_sed, rmse)
+
+
+	timer_end = time.time() 
+	likelihood = likehood_rep[:,0] # just plot proposed likelihood  
+	likelihood = np.asarray(np.split(likelihood,  num_chains ))
+
+	rmse_el = np.mean(rmse_elev[:])
+	rmse_el_std = np.std(rmse_elev[:])
+	rmse_el_min = np.amin(rmse_elev[:])
+	rmse_er = np.mean(rmse_erodep[:])
+	rmse_er_std = np.std(rmse_erodep[:])
+	rmse_er_min = np.amin(rmse_erodep[:])
+
+
+	time_total = (timer_end-timer_start)/60
+
+
+	resultingfile_db = open(problemfolder+'/master_result_file.txt','a+')  
+	#outres_db = open(problemfolder+'/result.txt', "a+")
+
+ 
+	allres =  np.asarray([ problem, num_chains, maxtemp, samples,swap_interval,  rmse_el, 
+						  rmse_er, rmse_el_std, rmse_er_std, rmse_el_min, 
+						  rmse_er_min, rmse, rmse_sed, swap_perc, accept_per, time_total]) 
+	print(allres, '  result')
+		 
+	#np.savetxt(outres_db,  allres   , fmt='%1.4f', newline=' '  )   
+	np.savetxt(resultingfile_db,   allres   , fmt='%1.4f',  newline=' ' )  
+
+	#np.savetxt(outres,  allres   , fmt='%1.4f', newline=' '  )   
+	#np.savetxt(resultingfile,   allres   , fmt='%1.4f',  newline=' ' ) 
+	#np.savetxt(resultingfile, [xv]   ,  fmt="%s", newline=' \n' ) 
+
+
+
 
 
 	#stop()

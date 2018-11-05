@@ -4,10 +4,10 @@ echo Running all
 
 
 
-python ptBayeslands_mountain_updatedswap.py 1 10000 10 12 0.05
+#python ptBayeslands_mountain_updatedswap.py 1 10000 10 12 0.05
 
-python ptBayeslands_mountain_updatedswap.py 1 10000 10 12 0.10
-python ptBayeslands_mountain_updatedswap.py 1 10000 10 12 0.15
+#python ptBayeslands_mountain_updatedswap.py 1 10000 10 12 0.10
+#python ptBayeslands_mountain_updatedswap.py 1 10000 10 12 0.15
  
 
 

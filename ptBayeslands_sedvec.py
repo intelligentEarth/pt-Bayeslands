@@ -54,9 +54,10 @@ parser=argparse.ArgumentParser(description='PTBayeslands modelling')
 parser.add_argument('-p','--problem', help='Problem Number 1-crater-fast,2-crater,3-etopo-fast,4-etopo,5-null,6-mountain', required=True, dest="problem",type=int)
 parser.add_argument('-s','--samples', help='Number of samples', default=10000, dest="samples",type=int)
 parser.add_argument('-r','--replicas', help='Number of chains/replicas, best to have one per availble core/cpu', default=2,dest="num_chains",type=int)
-parser.add_argument('-t','--temperature', help='Demoninator to determine Max Temperature of chains (MT=no.chains*5/t) ', default=2,dest="mt_val",type=int)
+parser.add_argument('-t','--temperature', help='Demoninator to determine Max Temperature of chains (MT=no.chains*t) ', default=1,dest="mt_val",type=int)
 parser.add_argument('-swap','--swap', help='Swap Ratio', dest="swap_ratio",default=0.1,type=float)
 parser.add_argument('-b','--burn', help='How many samples to discard before determing posteriors', dest="burn_in",default=0.1,type=float)
+parser.add_argument('-pt','--ptsamples', help='Ratio of PT vs straight MCMC samples to run', dest="pt_samples",default=0.5,type=float)
 
 args = parser.parse_args()
     
@@ -67,10 +68,10 @@ num_chains = args.num_chains
 swap_ratio = args.swap_ratio
 burn_in=args.burn_in
 #maxtemp = int(num_chains * 5)/args.mt_val
-maxtemp =  num_chains 
+maxtemp =  num_chains*args.mt_val 
 swap_interval = int(swap_ratio * (samples/num_chains)) #how ofen you swap neighbours
 num_successive_topo = 4
-
+pt_samples = args.pt_samples
 
 
 
@@ -295,7 +296,7 @@ class ptReplica(multiprocessing.Process):
         num_accepted = 0
         num_div = 0 
 
-        pt_samples = samples * 0.5 # this means that PT in canonical form with adaptive temp will work till pt  samples are reached
+        #pt_samples = samples * 0.5 # this means that PT in canonical form with adaptive temp will work till pt  samples are reached. Set in arguments, default 0.5
 
         init_count = 0
 
@@ -1319,7 +1320,7 @@ def main():
         problemfolder = 'Examples/etopo_fast/'
         xmlinput = problemfolder + 'etopo.xml'
         simtime = 500000
-        resolu_factor = 1.5
+        resolu_factor = 1
 
         true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') # make sure that this is updated in case when you intro more parameters. should have as many rows as parameters
         
@@ -1344,8 +1345,8 @@ def main():
         real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
 
         #Rainfall, erodibility, m, n, cmarine, caerial
-        maxlimits_vec = [3.0,7.e-6, 2, 2, 1.0, 0.7]  
-        minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]
+        maxlimits_vec = [3.0,7.e-6,n,m,real_cmarine,real_caerial] 
+        minlimits_vec = [0.0 ,3.e-6,n,m,real_cmarine,real_caerial]
         
         #Fix the variables here.
         # minlimits_vec=[rain_min,erod_min,m,n]
@@ -1389,15 +1390,18 @@ def main():
         real_caerial = 8.e-1 
         real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
 
-        maxlimits_vec = [3.0,7.e-6, 2, 2,  1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-        minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
+	#minlimits_vec = [1.5,real_erod,m,n,real_cmarine,real_caerial]
+	#maxlimits_vec = [1.5,real_erod,m,n,real_cmarine,real_caerial]
+
+        maxlimits_vec = [3.0,7.e-6, 2, 2,  0.7, 1.0]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
+        minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.3, 0.6 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
                                     ## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
 
                                     #if you want to freeze a parameter, keep max and min limits the same
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
     
     
-        stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+        stepsize_ratio  = 0.1 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
         stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
         num_param = vec_parameters.size
@@ -1461,7 +1465,7 @@ def main():
         simtime = 1000000
         resolu_factor = 1
         true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
-        likelihood_sediment = False
+        likelihood_sediment = True
 
         #Set variables
         m = 0.5
@@ -1485,11 +1489,11 @@ def main():
         uplift_max = 5.0 # X uplift_real
                 
         #Rainfall, erodibility, m, n, uplift
-        #minlimits_vec=[rain_min,erod_min,m_min,n_min,uplift_min]
-        #maxlimits_vec=[rain_max,erod_max,m_max,n_max,uplift_max]
+        minlimits_vec=[rain_min,erod_min,m_min,n_min,uplift_min]
+        maxlimits_vec=[rain_max,erod_max,m_max,n_max,uplift_max]
                 
-        minlimits_vec=[rain_real,erod_real,m,n,uplift_min]
-        maxlimits_vec=[rain_real,erod_real,m,n,uplift_max] 
+        #minlimits_vec=[rain_real,erod_real,m,n,uplift_min]
+        #maxlimits_vec=[rain_real,erod_real,m,n,uplift_max] 
                 
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 
@@ -1497,7 +1501,7 @@ def main():
 
         stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
         stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, 0.02] 
-        #stepratio_vec = [0.1, 0.02, 0.1, 0.1, 0.1]
+        stepratio_vec = [0.1, 0.1, 0.1, 0.1, 0.1]
         print("steps: ", stepratio_vec)
         num_param = vec_parameters.size
         erodep_coords=np.array([[5,5],[10,10],[20,20],[30,30],[40,40],[50,50],[25,25],[37,30],[44,27],[46,10]])
@@ -1653,7 +1657,9 @@ def main():
 
     #np.savetxt(outres,  allres   , fmt='%1.4f', newline=' '  )   
     #np.savetxt(resultingfile,   allres   , fmt='%1.4f',  newline=' ' ) 
-    #np.savetxt(resultingfile, [xv]   ,  fmt="%s", newline=' \n' ) 
+    
+    xv=problemfolder+'_'+str(run_nb)
+    np.savetxt(resultingfile_db, [xv]   ,  fmt="%s", newline=' \n' ) 
 
 
     print("NumChains, problem, folder, time, RMSE_sed, RMSE,samples,swap,maxtemp,burn")

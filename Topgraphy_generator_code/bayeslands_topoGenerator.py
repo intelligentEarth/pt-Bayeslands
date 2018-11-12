@@ -6,8 +6,11 @@
 ##  located at the project root, or contact the authors.                             ##
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
+
+#Main Contributer: Danial Azam  Email: dazam92@gmail.com
+
 """
-This script is intended to 
+This script is intended to generate the input and final-time topography used by the mcmc file.
 """
 import os
 import numpy as np
@@ -42,9 +45,20 @@ from plotly.graph_objs import *
 from plotly.offline.offline import _plot_html
 plotly.offline.init_notebook_mode()
 
+
 def interpolateArray(coords=None, z=None, dz=None):
 	"""
 	Interpolate the irregular spaced dataset from badlands on a regular grid.
+
+	Parameters
+	----------
+	variable : coords
+		R.
+	variable: z
+		F.
+	variable: dz
+		F.
+	
 	"""
 	x, y = np.hsplit(coords, 2)
 	dx = (x[1]-x[0])[0]
@@ -78,7 +92,26 @@ def interpolateArray(coords=None, z=None, dz=None):
 	return zreg,dzreg
 
 def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_coords, final_noise):
-	"""	
+	"""
+	
+	Parameters
+	----------
+	variable : directory
+		
+	variable: inputname
+		
+	variable: height
+		
+	variable: zmin
+
+	variable: zmax
+
+	variable: height
+
+	variable: zData
+
+	variable: title
+
 	"""
 	sim_interval = np.arange(0, simtime+1, simtime/4)
 	
@@ -89,6 +122,15 @@ def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_c
 	model.force.rainVal[:] = rain
 	model.input.SPLm = m
 	model.input.SPLn = n
+
+	# bPts = model.recGrid.boundsPt
+	# print ('bPTs', bPts)
+	# ePts = model.recGrid.edgesPt
+	# print ('ePTs', ePts)
+	# print(model.disp)
+	# # model.force.disp[::bPts] = 0
+	# return
+
 
 	elev_vec = collections.OrderedDict()
 	erdp_vec = collections.OrderedDict()
@@ -108,23 +150,22 @@ def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_c
 			erdp_pts[count] = erdp[val[0], val[1]]
 
 		# Adding Noise
-		tausq_elev = elev.max()* 0.01
-		tausq_erdp = erdp.max()* 0.01
-		tausq_erdp_pts = erdp_pts.max()* 0.01
+		tausq_elev = elev.max()* (0.01) + 0.5
+		tausq_erdp = erdp.max()* (0.01) + 0.5
+		tausq_erdp_pts = erdp_pts.max()*(0.01) + 0.5 
 		
-		elev_noise = np.random.normal(0, np.sqrt(tausq_elev), elev.size)
+		elev_noise = np.random.normal(0, np.sqrt(abs(tausq_elev)), elev.size)
 		elev_noise = np.reshape(elev_noise,(elev.shape[0],elev.shape[1]))	
-		erdp_noise = np.random.normal(0, np.sqrt(tausq_erdp), erdp.size)
+		erdp_noise = np.random.normal(0, np.sqrt(abs(tausq_erdp)), erdp.size)
 		erdp_noise = np.reshape(erdp_noise,(erdp.shape[0],erdp.shape[1]))	
-		erdp_pts_noise = np.random.normal(0, np.sqrt(tausq_erdp_pts), erdp_pts.size)
+		erdp_pts_noise = np.random.normal(0, np.sqrt(abs(tausq_erdp_pts)), erdp_pts.size)
 		erdp_pts_noise = np.reshape(erdp_pts_noise,(erdp_pts.shape))
-		#
 		
 		elev_=np.matrix(elev)
 		erdp_=np.matrix(erdp)
 		erdp_pts_ = np.matrix(erdp_pts)
 
-		if final_noise:
+		if final_noise and simtime==sim_interval[-1]:
 			elev_mat=np.add(elev_, elev_noise)
 			erdp_mat=np.add(erdp_, erdp_noise)
 			erdp_pts_mat = np.add(erdp_pts_, erdp_pts_noise)
@@ -138,7 +179,6 @@ def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_c
 		erdp_pts_vec[simtime] = erdp_pts_mat
 		
 	for k, v in elev_vec.items():
-		# print 'k', k
 		if k == sim_interval[0]:
 			# np.savetxt('%s/data/initial_elev.txt' %directory,  elev_vec[k],fmt='%.5f')
 			viewGrid(directory,'initial_elev', 'N/A', rain, erodibility, zData=elev_vec[k], title='Export Slope Grid')
@@ -149,7 +189,6 @@ def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_c
 		
 
 	for k, v in erdp_vec.items():
-		# print 'k'
 		# if k == sim_interval[0]:
 			# np.savetxt('%s/data/initial_erdp.txt' %directory,  erdp_vec[k],fmt='%.5f')
 			# viewMap(directory,'initial_erdp', 'N/A', rain, erodibility, zData=erdp_vec[k], title='Export Slope Grid')
@@ -157,7 +196,6 @@ def topoGenerator(directory, inputname, rain, erodibility, m, n, simtime, erdp_c
 		if k == sim_interval[-1]:
 			np.savetxt('%s/data/final_erdp.txt' %directory, erdp_vec[k],fmt='%.5f')
 			viewMap(directory,'final_erdp', 'N/A', rain, erodibility, zData=erdp_vec[k], title='Export Slope Grid')
-
 
 	erdp_pts_arr = np.zeros((sim_interval.size, erdp_pts_mat.size))
 	count = 0
@@ -212,8 +250,8 @@ def viewGrid(directory,sample_num, likl, rain, erod, width = 1000, height = 1000
 		height=height,
 		scene=Scene(
 			zaxis=ZAxis(range=[zmin, zmax],autorange=False,nticks=10,gridcolor='rgb(255, 255, 255)',gridwidth=2,zerolinecolor='rgb(255, 255, 255)',zerolinewidth=2),
-			xaxis=XAxis(nticks=10,gridcolor='rgb(255, 255, 255)',gridwidth=2,zerolinecolor='rgb(255, 255, 255)',zerolinewidth=2),
-			yaxis=YAxis(nticks=10,gridcolor='rgb(255, 255, 255)',gridwidth=2,zerolinecolor='rgb(255, 255, 255)',zerolinewidth=2),
+			xaxis=XAxis(nticks=10,gridcolor='rgb(255, 255, 255)',gridwidth=5,zerolinecolor='rgb(255, 255, 255)',zerolinewidth=2),
+			yaxis=YAxis(nticks=10,gridcolor='rgb(255, 255, 255)',gridwidth=5,zerolinecolor='rgb(255, 255, 255)',zerolinewidth=2),
 			bgcolor="rgb(244, 244, 248)"
 		)
 	)
@@ -320,17 +358,59 @@ def viewBar(directory,sample_num, likl, rain, erod, width = 500, height = 500, x
 		
 		return
 
+def checkUplift(directory, u_filename, t_filename):
+	upl = np.loadtxt('%s%s.csv' %(directory,u_filename))
+	top = np.loadtxt('%s%s.csv' %(directory,t_filename))
+	upl = upl.reshape(upl.shape[0],1)
+	# print(upl.shape)
+	# print(top.shape)
+	comb = np.hstack((top, upl))
+	
+	min_bound_x = comb[:,0].min()
+	max_bound_x = comb[:,0].max()
+	min_bound_y = comb[:,1].min()
+	max_bound_y = comb[:,1].max()
+
+	# print ('comb.shape', comb.shape)
+	# print ('comb[:,0:2]', comb[:,0:2])
+	# print ('max_b x', max_bound_x, 'min_b x', min_bound_x)
+	# print ('max_b y', max_bound_y, 'min_b y', min_bound_y)
+	for x in range(comb.shape[0]):
+		# print (comb[x,:])
+		row = comb[x,:]
+		ind_min_x = (row == min_bound_x)
+		ind_max_x = (row == max_bound_x)
+		ind_min_y = (row == min_bound_y)
+		ind_max_y = (row == max_bound_y)
+		# print (ind_min)
+		if (ind_min_x[0] == True or ind_max_x[0] == True) or (ind_min_y[1] == True or ind_max_y[1]==True):
+			# print('Im in the IF')
+			comb[x,3] = 0.0
+			# print (comb[x,:])
+
+	try:
+		if os.path.exists('%s%s.csv'% (directory, u_filename)):
+			os.remove('%s%s.csv'% (directory, u_filename))
+	except OSError:
+		pass
+
+	np.savetxt('%s%s.csv'% (directory, u_filename), comb[:,3])
+
+	return True
+
 def main():
 	"""
 	
 	"""
-	choice = input("Please choose a Badlands example to create an Initial and Final Topography for:\n 1) crater_fast\n 2) crater\n 3) etopo_fast\n 4) etopo\n")
+	uplift_verified = False
+	choice = input("Please choose a Badlands example to create an Initial and Final Topography for:\n 1) crater_fast\n 2) crater\n 3) etopo_fast\n 4) etopo\n 5) mountain\n 6) tasmania\n")
 	directory = ""
 
 	erdp_coords_crater = np.array([[60,60],[52,67],[74,76],[62,45],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69]])
 	erdp_coords_crater_fast = np.array([[60,60],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69],[79,91],[96,77],[42,49]])
 	erdp_coords_etopo = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])
 	erdp_coords_etopo_fast = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[68,40],[72,44]])
+	erdp_coords_mountain = np.array([[5,5],[10,10],[20,20],[30,30],[40,40],[50,50],[25,25],[37,30],[44,27],[46,10]])
 	
 	final_noise = True
 
@@ -365,5 +445,22 @@ def main():
 		topoGenerator(directory,'%s/etopo.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 1000000, erdp_coords_etopo,final_noise)
 		
 		print 'TopoGen for etopo completed in (s):',time.clock()-tstart
+
+	elif choice == 5:
+
+		tstart = time.clock()
+		directory = 'Examples/mountain'
+		uplift_verified = checkUplift(directory, '/data/uplift', '/data/nodes')
+		# uplift_verified = True
+		if uplift_verified:
+			topoGenerator(directory,'%s/mountain.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 50000000, erdp_coords_mountain,final_noise)
+		print 'TopoGen for mountain completed in (s):',time.clock()-tstart
+
+	elif choice == 6:
+
+		tstart = time.clock()
+		directory = 'Examples/tasmania'
+		topoGenerator(directory,'%s/tasmania.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 1000000, erdp_coords_mountain,final_noise)
+		print 'TopoGen for mountain completed in (s):',time.clock()-tstart
 
 if __name__ == "__main__": main()

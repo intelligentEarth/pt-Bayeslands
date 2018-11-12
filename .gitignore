@@ -11,6 +11,8 @@ libUtils/WaveComp/SwanSrc/*.o
 *.hdf5
 *.xmf
 *.xdmf
+*.dropbox
+*.directory
 .ipynb_checkpoints
 build/
 output_*
@@ -32,7 +34,8 @@ Examples/crater/mcmcresults_*
 Examples/crater_*/mcmcresults_*
 Examples/etopo/mcmcresults_*
 Examples/etopo_*/mcmcresults_*
-
+Examples/mountain/mcmcresults_*
+Examples/tasmania/mcmcresults_*
 
 Examples/mountain/results_*
 Examples/mountain_*/results_*
@@ -42,8 +45,12 @@ Examples/crater/results_*
 Examples/crater_*/results_*
 Examples/etopo/results_*
 Examples/etopo_*/results_*
+Examples/mountain/results_*
+Examples/tasmania/results_*
 
 Examples/crater/liklSurface_*
 Examples/crater_*/liklSurface_*
 Examples/etopo/liklSurface_*
 Examples/etopo_*/liklSurface_*
+Examples/mountain/liklSurface_*
+Examples/tasmania/liklSurface_*

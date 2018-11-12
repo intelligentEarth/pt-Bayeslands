@@ -1378,28 +1378,22 @@ def main():
         resolu_factor = 1
 
         true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
-        
-        m = 0.5 # used to be constants  
-        n = 1
-
-        real_rain = 1.5
-        real_erod = 5.e-5
-
         likelihood_sediment = True
 
-        real_caerial = 8.e-1 
+
+        real_rain = 1.5 #m/a
+        real_erod = 5.e-6 
+        m = 0.5  #Stream flow parameters
+        n = 1 #
         real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
+        real_caerial = 8.e-1 #aerial diffusion
 
-	#minlimits_vec = [1.5,real_erod,m,n,real_cmarine,real_caerial]
-	#maxlimits_vec = [1.5,real_erod,m,n,real_cmarine,real_caerial]
+        minlimits_vec = [0.0,real_erod,m,n,real_cmarine,real_caerial]
+        maxlimits_vec = [3.0,real_erod,m,n,real_cmarine,real_caerial]
 
-        maxlimits_vec = [3.0,7.e-6, 2, 2,  0.7, 1.0]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-        minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.3, 0.6 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
-                                    ## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
-
-                                    #if you want to freeze a parameter, keep max and min limits the same
+        #maxlimits_vec = [3.0,7.e-6, 2, 2,  0.7, 1.0]  
+        #minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.3, 0.6 ]   
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-    
     
         stepsize_ratio  = 0.1 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
@@ -1407,7 +1401,7 @@ def main():
         num_param = vec_parameters.size
 
         print(vec_parameters) 
-        
+
         erodep_coords = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])  # need to hand pick given your problem
 
         if (true_parameter_vec.shape[0] != vec_parameters.size ) :

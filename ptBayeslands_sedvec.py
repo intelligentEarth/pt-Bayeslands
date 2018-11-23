@@ -472,7 +472,7 @@ class ptReplica(multiprocessing.Process):
         np.savetxt(file_name, accept_list, fmt='%1.2f') 
 
         file_name = self.filename+'/posterior/rmse_elev_chain_'+ str(self.temperature)+ '.txt'
-        np.savetxt(file_name, rmse_elev, fmt='%1.2f')		
+        np.savetxt(file_name, rmse_elev, fmt='%1.2f')       
     
         file_name = self.filename+'/posterior/rmse_erodep_chain_'+ str(self.temperature)+ '.txt'
         np.savetxt(file_name, rmse_erodep, fmt='%1.2f')
@@ -525,7 +525,7 @@ class ParallelTempering:
         # create queues for transfer of parameters between process chain
         #self.chain_parameters = [multiprocessing.Queue() for i in range(0, self.num_chains) ]
         self.parameter_queue = [multiprocessing.Queue() for i in range(num_chains)]
-        self.chain_queue = multiprocessing.JoinableQueue()	
+        self.chain_queue = multiprocessing.JoinableQueue()  
         self.wait_chain = [multiprocessing.Event() for i in range (self.num_chains)]
 
         # two ways events are used to synchronize chains
@@ -616,9 +616,9 @@ class ParallelTempering:
         # #Linear Spacing
         # temp = 2
         # for i in range(0,self.num_chains):
-        # 	self.temperatures.append(temp)
-        # 	temp += 2.5 #(self.maxtemp/self.num_chains)
-        # 	print (self.temperatures[i])
+        #   self.temperatures.append(temp)
+        #   temp += 2.5 #(self.maxtemp/self.num_chains)
+        #   print (self.temperatures[i])
         #Geometric Spacing
 
         if self.geometric == True:
@@ -830,37 +830,51 @@ class ParallelTempering:
 
         #ax.set_xlim(-width,len(ind)+width)
 
+        size = 18
+
+        plt.tick_params(labelsize=size)
+        params = {'legend.fontsize': size, 'legend.handlelength': 2}
+        plt.rcParams.update(params)
         plt.plot(x, x_ymid_real, label='ground truth') 
-        plt.plot(x, x_ymid_mean, label='pred. (mean)')
-        plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
-        plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
+        plt.plot(x, x_ymid_mean, label='model pred.')
+        #plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
+        #plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
 
         plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.4)
-        plt.legend(loc='upper right') 
+        #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.legend(loc='best') 
+        #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
-
-        plt.title("Uncertainty in topography prediction (cross section)  ")
-        plt.xlabel(' Distance (km)  ')
-        plt.ylabel(' Height in meters')
+        plt.title("Topography prediction (cross section)  ", fontsize = size)
+        plt.xlabel(' Distance (km)  ', fontsize = size)
+        plt.ylabel(' Height (m)', fontsize = size)
+        plt.tight_layout()
         
-        plt.savefig(self.folder+'/x_ymid_opt.png')  
-        plt.savefig(self.folder+'/x_ymid_opt.svg', format='svg', dpi=400)
+        plt.savefig(self.folder+'/x_ymid_opt.png', dpi = 400)  
+        plt.savefig(self.folder+'/x_ymid_opt.pdf')
         plt.clf()
 
-
+        plt.tick_params(labelsize=size)
+        params = {'legend.fontsize': size, 'legend.handlelength': 2}
+        plt.rcParams.update(params)
         plt.plot(x_, y_xmid_real, label='ground truth') 
-        plt.plot(x_, y_xmid_mean, label='pred. (mean)') 
-        plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
-        plt.plot(x_, y_xmid_95th, label='pred.(95th percen.)')
-        plt.xlabel(' Distance (km) ')
-        plt.ylabel(' Height in meters')
+        plt.plot(x_, y_xmid_mean, label='model pred.') 
+        #plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
+        #plt.plot(x_, y_xmid_95th, label='pred.(95th percen.)')
+        plt.xlabel(' Distance (km) ', fontsize = size)
+        plt.ylabel(' Height (m)', fontsize = size)
         
-        plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4)
-        plt.legend(loc='upper right')
+        plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4) 
+        plt.legend(loc='best')
+        #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
-        plt.title("Uncertainty in topography prediction  (cross section)  ")
-        plt.savefig(self.folder+'/y_xmid_opt.png')  
-        plt.savefig(self.folder+'/y_xmid_opt.svg', format='svg', dpi=400)
+       # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+        plt.title("Topography prediction  (cross section)  ", fontsize = size)
+        plt.tight_layout()
+        plt.savefig(self.folder+'/y_xmid_opt.png', dpi=400)  
+        plt.savefig(self.folder+'/y_xmid_opt.pdf')
+
 
         plt.clf()
 
@@ -1107,7 +1121,7 @@ class ParallelTempering:
     
         ax1 = fig.add_subplot(211) 
 
-        n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)	
+        n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)  
 
         color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
         for count, v in enumerate(real_value):

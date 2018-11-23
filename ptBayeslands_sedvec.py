@@ -1104,54 +1104,44 @@ class ParallelTempering:
 
         list_points =  list
         fname = self.folder
-        width = 9 
-        font = 9
-        fig = plt.figure(figsize=(10, 12))
-        ax = fig.add_subplot(111)
-        slen = np.arange(0,len(list),1) 
-        
-        fig = plt.figure(figsize=(10,12))
-        ax = fig.add_subplot(111)
-        ax.spines['top'].set_color('none')
-        ax.spines['bottom'].set_color('none')
-        ax.spines['left'].set_color('none')
-        ax.spines['right'].set_color('none')
-        ax.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
-        ax.set_title(' Posterior distribution', fontsize=  font+2)#, y=1.02)
-    
-        ax1 = fig.add_subplot(211) 
-
-        n, rainbins, patches = ax1.hist(list_points,  bins = 20,  alpha=0.5, facecolor='sandybrown', normed=False)  
-
-        color = ['blue','red', 'pink', 'green', 'purple', 'cyan', 'orange','olive', 'brown', 'black']
-        for count, v in enumerate(real_value):
-            ax1.axvline(x=v, color='%s' %(color[count]), linestyle='dashed', linewidth=1) # comment when go real value is 
-
-        print(real_value)
-
-        ax1.grid(True)
-        ax1.set_ylabel('Frequency',size= font+1)
-        ax1.set_xlabel('Parameter values', size= font+1)
-    
-        ax2 = fig.add_subplot(212)
-
-        list_points = np.asarray(np.split(list_points,  self.num_chains ))
+         
 
 
+        size = 18
 
+        plt.tick_params(labelsize=size)
+        params = {'legend.fontsize': size, 'legend.handlelength': 2}
+        plt.rcParams.update(params)
+        plt.grid(alpha=0.75)
 
-        ax2.set_facecolor('#f2f2f3') 
-        ax2.plot( list_points.T , label=None)
-        ax2.set_title(r'Trace plot',size= font+2)
-        ax2.set_xlabel('Samples',size= font+1)
-        ax2.set_ylabel('Parameter values', size= font+1) 
+        plt.hist(list_points,  bins = 20, color='#0504aa',
+                            alpha=0.7)   
 
-        fig.tight_layout()
-        fig.subplots_adjust(top=0.88)
-        
-
-        plt.savefig(fname + '/' + title  + '_pos_.png', bbox_inches='tight', dpi=300, transparent=False)
+        plt.title("Posterior distribution ", fontsize = size)
+        plt.xlabel(' Parameter value  ', fontsize = size)
+        plt.ylabel(' Frequency ', fontsize = size)
+        plt.tight_layout()  
+        plt.savefig(fname + '/pos_plots/' + title  + '_posterior.pdf')
         plt.clf()
+
+
+        plt.tick_params(labelsize=size)
+        params = {'legend.fontsize': size, 'legend.handlelength': 2}
+        plt.rcParams.update(params)
+
+        listx = np.asarray(np.split(list_points,  self.num_chains ))
+        plt.plot(listx.T)   
+
+        plt.title("Posterior distribution ", fontsize = size)
+        plt.xlabel(' Number of Samples  ', fontsize = size)
+        plt.ylabel(' Parameter value ', fontsize = size)
+        plt.tight_layout()  
+        plt.savefig(fname + '/pos_plots/' + title  + '_trace.pdf')
+        plt.clf()
+
+
+        #---------------------------------------
+        
 
 
 
@@ -1541,6 +1531,8 @@ def main():
     #fname = ('sampleresults')
 
     make_directory((fname + '/posterior/pos_parameters')) 
+
+    make_directory((fname + '/pos_plots')) 
     make_directory((fname + '/posterior/predicted_topo'))
     make_directory((fname + '/posterior/pos_likelihood'))
     make_directory((fname + '/posterior/accept_list'))

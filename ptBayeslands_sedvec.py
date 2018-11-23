@@ -1132,7 +1132,7 @@ class ParallelTempering:
         listx = np.asarray(np.split(list_points,  self.num_chains ))
         plt.plot(listx.T)   
 
-        plt.title("Posterior distribution ", fontsize = size)
+        plt.title("Parameter trace plot", fontsize = size)
         plt.xlabel(' Number of Samples  ', fontsize = size)
         plt.ylabel(' Parameter value ', fontsize = size)
         plt.tight_layout()  

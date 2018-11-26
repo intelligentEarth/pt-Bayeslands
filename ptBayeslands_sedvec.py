@@ -71,7 +71,7 @@ burn_in=args.burn_in
 maxtemp =  num_chains*args.mt_val 
 swap_interval = int(swap_ratio * (samples/num_chains)) #how ofen you swap neighbours
 num_successive_topo = 4
-pt_samples = args.pt_samples
+pt_samples = samples*args.pt_samples
 
 
 
@@ -1392,8 +1392,8 @@ def main():
         real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
         real_caerial = 8.e-1 #aerial diffusion
 
-        minlimits_vec = [0.0,real_erod,m,n,real_cmarine,real_caerial]
-        maxlimits_vec = [3.0,real_erod,m,n,real_cmarine,real_caerial]
+        minlimits_vec = [0.0, 3.e-6, 0, 0, 0.6, 0.3]
+        maxlimits_vec = [3.0, 7.e-6, 2, 2, 1.0, 0.7]
 
         #maxlimits_vec = [3.0,7.e-6, 2, 2,  0.7, 1.0]  
         #minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.3, 0.6 ]   

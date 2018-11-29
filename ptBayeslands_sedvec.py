@@ -835,6 +835,7 @@ class ParallelTempering:
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
         plt.rcParams.update(params)
+        plt.figure(figsize =(12,12))
         plt.plot(x, x_ymid_real, label='ground truth') 
         plt.plot(x, x_ymid_mean, label='model pred.')
         #plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
@@ -857,6 +858,7 @@ class ParallelTempering:
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
         plt.rcParams.update(params)
+        plt.figure(figsize =(12,12))
         plt.plot(x_, y_xmid_real, label='ground truth') 
         plt.plot(x_, y_xmid_mean, label='model pred.') 
         #plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
@@ -1166,7 +1168,7 @@ class ParallelTempering:
         # range = [0,zData.shape[0]* self.resolu_factor]
         #range = [0,zData.shape[1]* self.resolu_factor],
 
-        data = Data([Surface(x= zData.shape[0] , y= zData.shape[1] , z=zData, colorscale='YIGnBu')])
+        data = Data([Surface(x= zData.shape[0] , y= zData.shape[1] , z=zData, colorscale='YlGnBu')])
 
         layout = Layout(title='Predicted Topography' , autosize=True, width=width, height=height,scene=Scene(
                     zaxis=ZAxis(title = 'Elevation (m)   ', range=[zmin,zmax], autorange=False, nticks=6, gridcolor='rgb(255, 255, 255)',

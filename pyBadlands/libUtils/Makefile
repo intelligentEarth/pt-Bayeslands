@@ -38,9 +38,9 @@ FCFLAGS = -O3 -funroll-loops --param max-unroll-times=2 -cpp \
 FFLAGS2 = $(FCFLAGS) -I$(MODDIR)
 F2PY_FLAGS = --f90exec=${FMPI} -I$(MODDIR)
 #For Artemis
-LDFLAGS =$($LDFLAGS)" -L$(LIBDIR2)/ -shared" 
+#LDFLAGS =$($LDFLAGS)" -L$(LIBDIR2)/ -shared" 
 #For Local
-#LDFLAGS =$($LDFLAGS)" -L$(LIBDIR2)/ "
+LDFLAGS =$($LDFLAGS)" -L$(LIBDIR2)/ "
 
 # Depression filling algorithm using Planchon and Darboux
 PD_FMOD = PDclass

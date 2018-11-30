@@ -830,12 +830,13 @@ class ParallelTempering:
 
         #ax.set_xlim(-width,len(ind)+width)
 
-        size = 18
+        size = 22
+
+        plt.figure(figsize =(12,12))
 
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
         plt.rcParams.update(params)
-        plt.figure(figsize =(12,12))
         plt.plot(x, x_ymid_real, label='ground truth') 
         plt.plot(x, x_ymid_mean, label='model pred.')
         #plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
@@ -846,7 +847,7 @@ class ParallelTempering:
         plt.legend(loc='best') 
         #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
-        plt.title("Topography prediction (cross section)  ", fontsize = size)
+        plt.title("Topography prediction (cross section)  ", fontsize = size+2)
         plt.xlabel(' Distance (km)  ', fontsize = size)
         plt.ylabel(' Height (m)', fontsize = size)
         plt.tight_layout()
@@ -855,10 +856,11 @@ class ParallelTempering:
         plt.savefig(self.folder+'/x_ymid_opt.pdf')
         plt.clf()
 
+        plt.figure(figsize =(12,12))
+
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
         plt.rcParams.update(params)
-        plt.figure(figsize =(12,12))
         plt.plot(x_, y_xmid_real, label='ground truth') 
         plt.plot(x_, y_xmid_mean, label='model pred.') 
         #plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
@@ -872,7 +874,7 @@ class ParallelTempering:
 
        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-        plt.title("Topography prediction  (cross section)  ", fontsize = size)
+        plt.title("Topography prediction  (cross section)  ", fontsize = size+2)
         plt.tight_layout()
         plt.savefig(self.folder+'/y_xmid_opt.png', dpi=400)  
         plt.savefig(self.folder+'/y_xmid_opt.pdf')

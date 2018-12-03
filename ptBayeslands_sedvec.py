@@ -1454,7 +1454,6 @@ def main():
         print(vec_parameters) 
         
         erodep_coords = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])  # need to hand pick given your problem
-
         if (true_parameter_vec.shape[0] != vec_parameters.size ) :
             print( 'vec_params != true_values.txt ',true_parameter_vec.shape,vec_parameters.size)
             print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 

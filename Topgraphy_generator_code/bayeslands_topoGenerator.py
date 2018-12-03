@@ -411,7 +411,7 @@ def main():
 	erdp_coords_etopo = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])
 	erdp_coords_etopo_fast = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[68,40],[72,44]])
 	erdp_coords_mountain = np.array([[5,5],[10,10],[20,20],[30,30],[40,40],[50,50],[25,25],[37,30],[44,27],[46,10]])
-	
+	erdp_coords_tasmania = np.array([[260,320],[400,350],[270,180],[290,50],[500,120],[500,195],[44,200],[5,315],[450,50],[95,260]])
 	final_noise = True
 
 	if choice == 1:
@@ -453,14 +453,14 @@ def main():
 		uplift_verified = checkUplift(directory, '/data/uplift', '/data/nodes')
 		# uplift_verified = True
 		if uplift_verified:
-			topoGenerator(directory,'%s/mountain.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 50000000, erdp_coords_mountain,final_noise)
+			topoGenerator(directory,'%s/mountain.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 1000000, erdp_coords_mountain,final_noise)
 		print 'TopoGen for mountain completed in (s):',time.clock()-tstart
 
 	elif choice == 6:
 
 		tstart = time.clock()
 		directory = 'Examples/tasmania'
-		topoGenerator(directory,'%s/tasmania.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 1000000, erdp_coords_mountain,final_noise)
-		print 'TopoGen for mountain completed in (s):',time.clock()-tstart
+		topoGenerator(directory,'%s/tasmania.xml' %(directory), 1.5 , 5.e-6, 0.5, 1, 1000000, erdp_coords_tasmania,final_noise)
+		print 'TopoGen for tasmania completed in (s):',time.clock()-tstart
 
 if __name__ == "__main__": main()

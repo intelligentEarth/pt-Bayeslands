@@ -54,10 +54,10 @@ parser=argparse.ArgumentParser(description='PTBayeslands modelling')
 parser.add_argument('-p','--problem', help='Problem Number 1-crater-fast,2-crater,3-etopo-fast,4-etopo,5-null,6-mountain', required=True, dest="problem",type=int)
 parser.add_argument('-s','--samples', help='Number of samples', default=10000, dest="samples",type=int)
 parser.add_argument('-r','--replicas', help='Number of chains/replicas, best to have one per availble core/cpu', default=2,dest="num_chains",type=int)
-parser.add_argument('-t','--temperature', help='Demoninator to determine Max Temperature of chains (MT=no.chains*t) ', default=1,dest="mt_val",type=int)
+parser.add_argument('-t','--temperature', help='Demoninator to determine Max Temperature of chains (MT=no.chains*t) ', default=10,dest="mt_val",type=int)
 parser.add_argument('-swap','--swap', help='Swap Ratio', dest="swap_ratio",default=0.1,type=float)
-parser.add_argument('-b','--burn', help='How many samples to discard before determing posteriors', dest="burn_in",default=0.1,type=float)
-parser.add_argument('-pt','--ptsamples', help='Ratio of PT vs straight MCMC samples to run', dest="pt_samples",default=0.5,type=float)
+parser.add_argument('-b','--burn', help='How many samples to discard before determing posteriors', dest="burn_in",default=0.15,type=float)
+parser.add_argument('-pt','--ptsamples', help='Ratio of PT vs straight MCMC samples to run', dest="pt_samples",default=0.6,type=float)
 
 args = parser.parse_args()
     

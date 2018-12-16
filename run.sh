@@ -4,15 +4,19 @@ echo Running all
 
 # python ptBayeslands_sedvec.py -p 3 -s 600 -r 10 -b 0.05 -pt 0.5
 
+  
  
-for probability in 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1
+for x in  1
 	do
-		for run in 1 2 3
+		for prob in 2 4 6
 		do
-			python ptBayeslands_sedvec.py -p 4 -s 10000 -r 10 -t 10 -swap $probability -b 0.25 -pt 0.5
+			
+			python ptBayeslands_sedvec.py -p $prob -s 100000 -r 20 -t 10 -swap 0.002 -b 0.25 -pt 0.5
+ 
  
 		done
 	done 
+
 
 
 

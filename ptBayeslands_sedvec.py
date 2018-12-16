@@ -53,11 +53,11 @@ parser=argparse.ArgumentParser(description='PTBayeslands modelling')
 
 parser.add_argument('-p','--problem', help='Problem Number 1-crater-fast,2-crater,3-etopo-fast,4-etopo,5-null,6-mountain', required=True, dest="problem",type=int)
 parser.add_argument('-s','--samples', help='Number of samples', default=10000, dest="samples",type=int)
-parser.add_argument('-r','--replicas', help='Number of chains/replicas, best to have one per availble core/cpu', default=2,dest="num_chains",type=int)
+parser.add_argument('-r','--replicas', help='Number of chains/replicas, best to have one per availble core/cpu', default=10,dest="num_chains",type=int)
 parser.add_argument('-t','--temperature', help='Demoninator to determine Max Temperature of chains (MT=no.chains*t) ', default=10,dest="mt_val",type=int)
-parser.add_argument('-swap','--swap', help='Swap Ratio', dest="swap_ratio",default=0.1,type=float)
-parser.add_argument('-b','--burn', help='How many samples to discard before determing posteriors', dest="burn_in",default=0.15,type=float)
-parser.add_argument('-pt','--ptsamples', help='Ratio of PT vs straight MCMC samples to run', dest="pt_samples",default=0.6,type=float)
+parser.add_argument('-swap','--swap', help='Swap Ratio', dest="swap_ratio",default=0.02,type=float)
+parser.add_argument('-b','--burn', help='How many samples to discard before determing posteriors', dest="burn_in",default=0.25,type=float)
+parser.add_argument('-pt','--ptsamples', help='Ratio of PT vs straight MCMC samples to run', dest="pt_samples",default=0.5,type=float)
 
 args = parser.parse_args()
     
@@ -830,7 +830,7 @@ class ParallelTempering:
 
         #ax.set_xlim(-width,len(ind)+width)
 
-        size = 22
+        size = 25
 
         plt.figure(figsize =(12,12))
 
@@ -842,7 +842,7 @@ class ParallelTempering:
         #plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
         #plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
 
-        plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.4)
+        plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.2, label='Uncertainity' )
         #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.legend(loc='best') 
         #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
@@ -868,7 +868,7 @@ class ParallelTempering:
         plt.xlabel(' Distance (km) ', fontsize = size)
         plt.ylabel(' Height (m)', fontsize = size)
         
-        plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='g', alpha=0.4) 
+        plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='c', alpha=0.4) 
         plt.legend(loc='best')
         #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
@@ -1111,7 +1111,7 @@ class ParallelTempering:
          
 
 
-        size = 18
+        size = 22
 
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
@@ -1214,6 +1214,14 @@ def make_directory (directory):
 
 def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_interval, fname):
 
+
+    size = 22
+
+    plt.tick_params(labelsize=size)
+    params = {'legend.fontsize': size, 'legend.handlelength': 2}
+    plt.rcParams.update(params)
+    plt.grid(alpha=0.75)
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
     index = np.arange(groundtruth_erodep_pts.size) 
@@ -1240,10 +1248,10 @@ def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_inte
     xTickMarks = [str(i) for i in range(1,21)]
     ax.set_xticks(index+width)
     xtickNames = ax.set_xticklabels(xTickMarks)
-    plt.setp(xtickNames, rotation=0, fontsize=8)
+    plt.setp(xtickNames, rotation=0, fontsize=10)
 
     ## add a legend
-    plotlegend = ax.legend( (rects1[0], rects2[0]), ('Predicted  ', ' Ground-truth ') )
+    plotlegend = ax.legend( (rects1[0], rects2[0]), ('Predicted  ', ' Actual ') )
     
     plt.savefig(fname +'/pos_erodep_'+str( sim_interval) +'_.png')
     plt.clf()    
@@ -1585,7 +1593,7 @@ def main():
     likelihood = np.asarray(np.split(likelihood,  num_chains ))
 
     plt.plot(likelihood.T)
-    plt.savefig( fname+'/likelihood.png')
+    plt.savefig( fname+'/likelihood.pdf')
     plt.clf()
     plt.plot(accept_list.T)
     plt.savefig( fname+'/accept_list.png')
@@ -1627,7 +1635,7 @@ def main():
     plt.legend(loc='upper right') 
     plt.title("Boxplot of Posterior")
     plt.savefig(fname+'/badlands_pos.png')
-    plt.savefig(fname+'/badlands_pos.svg', format='svg', dpi=400)
+    plt.savefig(fname+'/badlands_pos.pdf')
     
     print (num_chains, problemfolder, run_nb_str, (timer_end-timer_start)/60, rmse_sed, rmse)
 
@@ -1652,7 +1660,7 @@ def main():
 
     allres =  np.asarray([ problem, num_chains, maxtemp, samples,swap_interval,  rmse_el, 
                         rmse_er, rmse_el_std, rmse_er_std, rmse_el_min, 
-                        rmse_er_min, rmse, rmse_sed, swap_perc, accept_per, time_total]) 
+                        rmse_er_min,  swap_perc, accept_per, time_total]) 
     print(allres, '  result')
         
     #np.savetxt(outres_db,  allres   , fmt='%1.4f', newline=' '  )   

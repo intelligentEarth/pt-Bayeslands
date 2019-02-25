@@ -1677,6 +1677,12 @@ def main():
     print (num_chains, problemfolder, run_nb_str, (timer_end-timer_start)/60, rmse_sed, rmse,samples, swap_ratio,maxtemp,burn_in)
 
 
+    dir_name = fname + '/posterior'
+    print(dir_name)
+    if os.path.isdir(dir_name):
+        shutil.rmtree(dir_name)
+
+
 
     #stop()
 if __name__ == "__main__": main()

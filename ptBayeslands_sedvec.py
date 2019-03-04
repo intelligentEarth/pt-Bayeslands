@@ -433,7 +433,7 @@ class ptReplica(multiprocessing.Process):
                         print ('error')
 
                 else:
-                    print("Khali - swap bug fix by Arpit Kapoor ")
+                    print(" . ")
                     
                 self.event.clear()
 
@@ -798,7 +798,7 @@ class ParallelTempering:
 
         return (pos_param,likelihood_rep, accept_list,   combined_erodep,  pred_topofinal, swap_perc, accept,  rmse_elev, rmse_erodep)
 
-    def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
+    '''def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
         print ('list_xslice', list_xslice.shape)
         print ('list_yslice', list_yslice.shape)
 
@@ -880,7 +880,72 @@ class ParallelTempering:
         plt.savefig(self.folder+'/y_xmid_opt.pdf')
 
 
+        plt.clf()'''
+
+    def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
+        print ('list_xslice', list_xslice.shape)
+        print ('list_yslice', list_yslice.shape)
+
+        ymid = int(self.real_elev.shape[1]/2 ) #   cut the slice in the middle 
+        xmid = int(self.real_elev.shape[0]/2)
+
+        print( 'ymid',ymid)
+        print( 'xmid', xmid)
+        print(self.real_elev)
+        print(self.real_elev.shape, ' shape')
+
+        x_ymid_real = self.real_elev[xmid, :] 
+        y_xmid_real = self.real_elev[:, ymid ] 
+        x_ymid_mean = list_xslice.mean(axis=1)
+
+        print( x_ymid_real.shape , ' x_ymid_real shape')
+        print( x_ymid_mean.shape , ' x_ymid_mean shape')
+        
+        x_ymid_5th = np.percentile(list_xslice, 5, axis=1)
+        x_ymid_95th= np.percentile(list_xslice, 95, axis=1)
+
+        y_xmid_mean = list_yslice.mean(axis=1)
+        y_xmid_5th = np.percentile(list_yslice, 5, axis=1)
+        y_xmid_95th= np.percentile(list_yslice, 95, axis=1)
+
+
+        x = np.linspace(0, x_ymid_mean.size * self.resolu_factor, num=x_ymid_mean.size) 
+        x_ = np.linspace(0, y_xmid_mean.size * self.resolu_factor, num=y_xmid_mean.size)
+
+        #ax.set_xlim(-width,len(ind)+width)
+
+        self.cross_section(x, x_ymid_mean, x_ymid_real, x_ymid_5th, x_ymid_95th, 'x_ymid_cross')
+        self.cross_section(x_, y_xmid_mean, y_xmid_real, y_xmid_5th, y_xmid_95th, 'y_xmid_cross')
+
+
+       
+
+    def cross_section(self, x, pred, real, lower, higher, fname):
+
+        size = 15
+
+        plt.tick_params(labelsize=size)
+        params = {'legend.fontsize': size, 'legend.handlelength': 2}
+        plt.rcParams.update(params)
+        plt.plot(x,  real, label='Ground Truth') 
+        plt.plot(x, pred, label='Badlands Pred.') 
+
+        rmse_init = np.sqrt(np.sum(np.square(pred  -  real))  / real.size)   
+
+        plt.fill_between(x, lower , higher, facecolor='g', alpha=0.4)
+        #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.legend(loc='best') 
+        #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+
+        plt.title("Topography  cross section   ", fontsize = size)
+        plt.xlabel(' Distance (km)  ', fontsize = size)
+        plt.ylabel(' Height (m)', fontsize = size)
+        plt.tight_layout()
+          
+        plt.savefig(self.folder+'/'+fname+'.pdf')
         plt.clf()
+
+        return rmse_init
 
 
     # Merge different MCMC chains y stacking them on top of each other
@@ -1111,7 +1176,7 @@ class ParallelTempering:
          
 
 
-        size = 22
+        size = 15
 
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
@@ -1214,13 +1279,7 @@ def make_directory (directory):
 
 def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_interval, fname):
 
-
-    size = 22
-
-    plt.tick_params(labelsize=size)
-    params = {'legend.fontsize': size, 'legend.handlelength': 2}
-    plt.rcParams.update(params)
-    plt.grid(alpha=0.75)
+    ticksize = 15
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -1237,24 +1296,21 @@ def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_inte
     rects2 = ax.bar(index+width, groundtruth_erodep_pts, width, color='green', 
                 yerr=ground_erodepstd,
                 error_kw=dict(elinewidth=2,ecolor='red') )
+ 
 
-    # axes and labels
-    #ax.set_xlim(-width,len(ind)+width)
-    #ax.set_ylim(0,0.2)
-    ax.set_ylabel('Height in meters')
-    ax.set_xlabel('Selected Coordinates')
-    ax.set_title('Erosion Deposition')
+ 
+    ax.tick_params(labelsize=ticksize)
 
-    xTickMarks = [str(i) for i in range(1,21)]
-    ax.set_xticks(index+width)
-    xtickNames = ax.set_xticklabels(xTickMarks)
-    plt.setp(xtickNames, rotation=0, fontsize=10)
 
-    ## add a legend
-    plotlegend = ax.legend( (rects1[0], rects2[0]), ('Predicted  ', ' Actual ') )
+    ax.set_ylabel('Height in meters', fontsize=ticksize)
+    ax.set_xlabel('Location ID ', fontsize=ticksize)
+    ax.set_title('Erosion/Deposition', fontsize=ticksize)
+ 
+    plotlegend = ax.legend( (rects1[0], rects2[0]), ('Predicted  ', ' Ground-truth ') )
     
-    plt.savefig(fname +'/pos_erodep_'+str( sim_interval) +'_.png')
+    plt.savefig(fname +'/pos_erodep_'+str( sim_interval) +'_.pdf')
     plt.clf()    
+  
 
 
 
@@ -1595,8 +1651,17 @@ def main():
     plt.plot(likelihood.T)
     plt.savefig( fname+'/likelihood.pdf')
     plt.clf()
+    size = 15 
+
+    plt.tick_params(labelsize=size)
+    params = {'legend.fontsize': size, 'legend.handlelength': 2}
+    plt.rcParams.update(params)
     plt.plot(accept_list.T)
-    plt.savefig( fname+'/accept_list.png')
+    plt.title("Replica Acceptance ", fontsize = size)
+    plt.xlabel(' Number of Samples  ', fontsize = size)
+    plt.ylabel(' Number Accepted ', fontsize = size)
+    plt.tight_layout()
+    plt.savefig( fname+'/accept_list.pdf' )
     plt.clf()
 
 
@@ -1629,12 +1694,16 @@ def main():
     mpl_fig = plt.figure()
     ax = mpl_fig.add_subplot(111)
 
-    ax.boxplot(pos_param.T) 
-    ax.set_xlabel('Badlands parameters')
-    ax.set_ylabel('Posterior') 
+    size = 15
+
+    ax.tick_params(labelsize=size)
+
     plt.legend(loc='upper right') 
-    plt.title("Boxplot of Posterior")
-    plt.savefig(fname+'/badlands_pos.png')
+
+    ax.boxplot(pos_param.T) 
+    ax.set_xlabel('Parameter ID', fontsize=size)
+    ax.set_ylabel('Posterior', fontsize=size) 
+    plt.title("Boxplot of Posterior", fontsize=size) 
     plt.savefig(fname+'/badlands_pos.pdf')
     
     print (num_chains, problemfolder, run_nb_str, (timer_end-timer_start)/60, rmse_sed, rmse)

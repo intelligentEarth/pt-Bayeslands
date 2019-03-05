@@ -929,6 +929,7 @@ class ParallelTempering:
         plt.rcParams.update(params)
         plt.plot(x,  real, label='Ground Truth') 
         plt.plot(x, pred, label='Badlands Pred.') 
+        plt.grid(alpha=0.75)
 
         rmse_init = np.sqrt(np.sum(np.square(pred  -  real))  / real.size)   
 
@@ -1300,6 +1301,7 @@ def plot_erodeposition(erodep_mean, erodep_std, groundtruth_erodep_pts, sim_inte
 
  
     ax.tick_params(labelsize=ticksize)
+    ax.grid(alpha=0.75)
 
 
     ax.set_ylabel('Height in meters', fontsize=ticksize)
@@ -1660,6 +1662,7 @@ def main():
     plt.title("Replica Acceptance ", fontsize = size)
     plt.xlabel(' Number of Samples  ', fontsize = size)
     plt.ylabel(' Number Accepted ', fontsize = size)
+    plt.grid(alpha=0.75)
     plt.tight_layout()
     plt.savefig( fname+'/accept_list.pdf' )
     plt.clf()

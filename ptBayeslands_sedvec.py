@@ -798,89 +798,7 @@ class ParallelTempering:
 
         return (pos_param,likelihood_rep, accept_list,   combined_erodep,  pred_topofinal, swap_perc, accept,  rmse_elev, rmse_erodep)
 
-    '''def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
-        print ('list_xslice', list_xslice.shape)
-        print ('list_yslice', list_yslice.shape)
-
-        ymid = int(self.real_elev.shape[1]/2 ) #   cut the slice in the middle 
-        xmid = int(self.real_elev.shape[0]/2)
-
-        print( 'ymid',ymid)
-        print( 'xmid', xmid)
-        print(self.real_elev)
-        print(self.real_elev.shape, ' shape')
-
-        x_ymid_real = self.real_elev[xmid, :] 
-        y_xmid_real = self.real_elev[:, ymid ] 
-        x_ymid_mean = list_xslice.mean(axis=1)
-
-        print( x_ymid_real.shape , ' x_ymid_real shape')
-        print( x_ymid_mean.shape , ' x_ymid_mean shape')
-        
-        x_ymid_5th = np.percentile(list_xslice, 5, axis=1)
-        x_ymid_95th= np.percentile(list_xslice, 95, axis=1)
-
-        y_xmid_mean = list_yslice.mean(axis=1)
-        y_xmid_5th = np.percentile(list_yslice, 5, axis=1)
-        y_xmid_95th= np.percentile(list_yslice, 95, axis=1)
-
-
-        x = np.linspace(0, x_ymid_mean.size * self.resolu_factor, num=x_ymid_mean.size) 
-        x_ = np.linspace(0, y_xmid_mean.size * self.resolu_factor, num=y_xmid_mean.size)
-
-        #ax.set_xlim(-width,len(ind)+width)
-
-        size = 25
-
-        plt.figure(figsize =(12,12))
-
-        plt.tick_params(labelsize=size)
-        params = {'legend.fontsize': size, 'legend.handlelength': 2}
-        plt.rcParams.update(params)
-        plt.plot(x, x_ymid_real, label='ground truth') 
-        plt.plot(x, x_ymid_mean, label='model pred.')
-        #plt.plot(x, x_ymid_5th, label='pred.(5th percen.)')
-        #plt.plot(x, x_ymid_95th, label='pred.(95th percen.)')
-
-        plt.fill_between(x, x_ymid_5th , x_ymid_95th, facecolor='g', alpha=0.2, label='Uncertainity' )
-        #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.legend(loc='best') 
-        #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
-
-        plt.title("Topography prediction (cross section)  ", fontsize = size+2)
-        plt.xlabel(' Distance (km)  ', fontsize = size)
-        plt.ylabel(' Height (m)', fontsize = size)
-        plt.tight_layout()
-        
-        plt.savefig(self.folder+'/x_ymid_opt.png', dpi = 400)  
-        plt.savefig(self.folder+'/x_ymid_opt.pdf')
-        plt.clf()
-
-        plt.figure(figsize =(12,12))
-
-        plt.tick_params(labelsize=size)
-        params = {'legend.fontsize': size, 'legend.handlelength': 2}
-        plt.rcParams.update(params)
-        plt.plot(x_, y_xmid_real, label='ground truth') 
-        plt.plot(x_, y_xmid_mean, label='model pred.') 
-        #plt.plot(x_, y_xmid_5th, label='pred.(5th percen.)')
-        #plt.plot(x_, y_xmid_95th, label='pred.(95th percen.)')
-        plt.xlabel(' Distance (km) ', fontsize = size)
-        plt.ylabel(' Height (m)', fontsize = size)
-        
-        plt.fill_between(x_, y_xmid_5th , y_xmid_95th, facecolor='c', alpha=0.4) 
-        plt.legend(loc='best')
-        #plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
-
-       # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-
-        plt.title("Topography prediction  (cross section)  ", fontsize = size+2)
-        plt.tight_layout()
-        plt.savefig(self.folder+'/y_xmid_opt.png', dpi=400)  
-        plt.savefig(self.folder+'/y_xmid_opt.pdf')
-
-
-        plt.clf()'''
+     
 
     def view_crosssection_uncertainity(self,  list_xslice, list_yslice):
         print ('list_xslice', list_xslice.shape)
@@ -1198,6 +1116,7 @@ class ParallelTempering:
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
         plt.rcParams.update(params)
+        plt.grid(alpha=0.75)
 
         listx = np.asarray(np.split(list_points,  self.num_chains ))
         plt.plot(listx.T)   

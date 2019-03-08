@@ -771,9 +771,20 @@ class ParallelTempering:
             self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s), self.realvalues[s,:]  ) 
 
 
+
+
         for i in range(self.sim_interval.size):
 
             self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_topo[i,:,:], title='Predicted Topography ', time_frame=self.sim_interval[i],  filename= 'mean')
+
+        self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
+        residual_elev = self.real_elev - pred_topo[self.sim_interval.size-1,:,:] 
+        self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  residual_elev , title='Residual Topography', time_frame= self.simtime, filename = 'residual_elev')
+        #self.plot_figure(residual_elev.flatten(), 'residual_elev', []  ) 
+
+
+
+
 
         if self.show_fulluncertainity == True: # this to be used when you need output of the topo predictions - 5th and 95th percentiles
 
@@ -789,8 +800,7 @@ class ParallelTempering:
         
             self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=pred_elevoptimal[self.simtime], title='Pred. Topo. - Optimal', time_frame= self.simtime, filename = 'optimal')
 
-            self.viewGrid(width=1000, height=1000, zmin=None, zmax=None, zData=  self.real_elev , title='Ground truth Topography', time_frame= self.simtime, filename = 'ground_truth')
-
+            
     
 
         swap_perc = self.num_swap*100/self.total_swap_proposals  
@@ -1097,6 +1107,7 @@ class ParallelTempering:
 
         size = 15
 
+
         plt.tick_params(labelsize=size)
         params = {'legend.fontsize': size, 'legend.handlelength': 2}
         plt.rcParams.update(params)
@@ -1155,15 +1166,25 @@ class ParallelTempering:
         # range = [0,zData.shape[0]* self.resolu_factor]
         #range = [0,zData.shape[1]* self.resolu_factor],
 
+
+        #https://plot.ly/r/reference/#scatter3d 
+
+        #https://plot.ly/python/reference/#layout-yaxis-title-font-size
+        #https://plot.ly/r/reference/#heatmap-showscale
+
+
+
+        axislabelsize = 20
+
         data = Data([Surface(x= zData.shape[0] , y= zData.shape[1] , z=zData, colorscale='YlGnBu')])
 
         layout = Layout(title='Predicted Topography' , autosize=True, width=width, height=height,scene=Scene(
-                    zaxis=ZAxis(title = 'Elevation (m)   ', range=[zmin,zmax], autorange=False, nticks=6, gridcolor='rgb(255, 255, 255)',
-                                gridwidth=2, zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
-                    xaxis=XAxis(title = 'x-coordinates  ',  tickvals= xx,      gridcolor='rgb(255, 255, 255)', gridwidth=2,
-                                zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
-                    yaxis=YAxis(title = 'y-coordinates  ', tickvals= yy,    gridcolor='rgb(255, 255, 255)', gridwidth=2,
-                                zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2),
+                    zaxis=ZAxis(title = 'Elev. (m)   ', range=[zmin,zmax], autorange=False, nticks=5, gridcolor='rgb(255, 255, 255)',
+                                gridwidth=2, zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2, showticklabels = True,  titlefont=dict(size=axislabelsize),  tickfont=dict(size=14 ),),
+                    xaxis=XAxis(title = 'x-axis  ',  tickvals= xx,      gridcolor='rgb(255, 255, 255)', gridwidth=2,
+                                zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2, showticklabels = True,  titlefont=dict(size=axislabelsize),  tickfont=dict(size=14 ),),
+                    yaxis=YAxis(title = 'y-axis  ', tickvals= yy,    gridcolor='rgb(255, 255, 255)', gridwidth=2,
+                                zerolinecolor='rgb(255, 255, 255)', zerolinewidth=2, showticklabels = True,  titlefont=dict(size=axislabelsize),  tickfont=dict(size=14 ),),
                     bgcolor="rgb(244, 244, 248)"
                 )
             )
@@ -1171,13 +1192,23 @@ class ParallelTempering:
         fig = Figure(data=data, layout=layout) 
         graph = plotly.offline.plot(fig, auto_open=False, output_type='file', filename= self.folder +  '/pred_plots'+ '/pred_'+filename+'_'+str(time_frame)+ '_.html', validate=False)
 
-        fname = self.folder + '/pred_plots'+'/pred_'+filename+'_'+str(time_frame)+ '_.png' 
+        fname = self.folder + '/pred_plots'+'/pred_'+filename+'_'+str(time_frame)+ '_.pdf' 
         elev_data = np.reshape(zData, zData.shape[0] * zData.shape[1] )   
         hist, bin_edges = np.histogram(elev_data, density=True)
+
+        size = 15 
+        plt.tick_params(labelsize=size)
+        params = {'legend.fontsize': size, 'legend.handlelength': 2}
+        plt.rcParams.update(params)
         plt.hist(elev_data, bins='auto')  
-        plt.title("Predicted Topography Histogram")  
-        plt.xlabel('Height in meters')
-        plt.ylabel('Frequency')
+
+        #plt.title("Topography")  
+        plt.xlabel('Elevation', fontsize = size)
+        plt.ylabel('Frequency', fontsize = size)
+        plt.grid(alpha=0.75)
+
+
+        plt.tight_layout()  
         plt.savefig(fname )
         plt.clf()
 
@@ -1672,6 +1703,12 @@ def main():
     print(dir_name)
     if os.path.isdir(dir_name):
         shutil.rmtree(dir_name)
+
+
+    fname_remove = fname +'/pos_param.txt'
+
+    if os.path.exists(fname_remove):  # comment if you wish to keep pos file
+        os.remove(fname_remove)
 
 
 

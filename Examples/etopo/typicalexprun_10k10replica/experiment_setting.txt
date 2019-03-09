@@ -2,11 +2,11 @@
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -23,11 +23,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -44,11 +44,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -65,11 +65,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -86,11 +86,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -107,11 +107,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -128,11 +128,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -149,11 +149,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -170,11 +170,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]
@@ -191,11 +191,11 @@ sed scaling factor:,50
 samples_per_chain:,1000
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[2.09351399e+00 4.59622793e-06 5.58477684e-01 8.56647932e-01
- 6.44111988e-01 3.67670653e-01]
+initial_proposed_vec:,[2.86600742e+00 3.48404734e-06 1.33930561e+00 3.45159790e-01
+ 7.31054516e-01 4.12155405e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
-swap interval:,20
+swap interval:,10
 sim interval:,[      0.  250000.  500000.  750000. 1000000.]
 likelihood_sed (T/F):,True
 erodep_coords:,[[42 10]

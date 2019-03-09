@@ -2,8 +2,8 @@
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -23,8 +23,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -44,8 +44,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -65,8 +65,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -86,8 +86,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -107,8 +107,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -128,8 +128,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -149,8 +149,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -170,8 +170,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -191,8 +191,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -212,8 +212,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -233,8 +233,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -254,8 +254,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -275,8 +275,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -296,8 +296,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -317,8 +317,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -338,8 +338,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -359,8 +359,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -380,8 +380,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25
@@ -401,8 +401,8 @@ sed scaling factor:,50
 samples_per_chain:,2500
 burnin:,0.25
 num params:,6
-initial_proposed_vec:,[9.19999730e-01 5.35585837e-06 1.78750050e+00 9.28478216e-01
- 9.66621445e-01 5.24097572e-01]
+initial_proposed_vec:,[6.80430196e-01 6.34769605e-06 1.51997358e+00 8.73322908e-01
+ 9.09347729e-01 4.28133324e-01]
 stepsize_vec:,[3.e-01 4.e-07 2.e-01 2.e-01 4.e-02 4.e-02]
 step_ratio_vec:,[0.1 0.1 0.1 0.1 0.1 0.1]
 swap interval:,25

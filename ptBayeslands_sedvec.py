@@ -1271,42 +1271,9 @@ def main():
     random.seed(time.time()) 
 
     #problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
+ 
 
-    if problem == 1:
-        problemfolder = 'Examples/crater_fast/'
-        xmlinput = problemfolder + 'crater.xml'
-        print('xmlinput', xmlinput)
-        simtime = 15000 
-        resolu_factor =  0.002 # this helps visualize the surface distance in meters 
-        true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
-        
-        m = 0.5 # used to be constants  
-        n = 1
-        real_rain = 1.5
-        real_erod = 5.e-5  
-
-        likelihood_sediment = True
-
-        #Rainfall, erodibility, m, n
-        maxlimits_vec = [3.0,7.e-5,m , n] 
-        minlimits_vec = [0.0 ,3.e-5, m, n]  
-        
-        vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
-        
-        stepsize_ratio  = 0.02 
-        
-        stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
-        num_param = vec_parameters.size 
-
-        erodep_coords = np.array([[60,60],[72,66],[85,73],[90,75],[44,86],[100,80],[88,69],[79,91],[96,77],[42,49]]) # need to hand pick given your problem
-
-        if (true_parameter_vec.shape[0] != vec_parameters.size ) :
-            print( 'vec_params != true_values.txt ',true_parameter_vec.shape,vec_parameters.size)
-            print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 
-
-            return
-
-    elif problem == 2:
+    elif problem == 1:
         problemfolder = 'Examples/crater/'
         xmlinput = problemfolder + 'crater.xml'
         simtime = 50000
@@ -1340,62 +1307,9 @@ def main():
             
             return
 
-    elif problem == 3:
-        problemfolder = 'Examples/etopo_fast/'
-        xmlinput = problemfolder + 'etopo.xml'
-        simtime = 500000
-        resolu_factor = 1
+     
 
-        true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') # make sure that this is updated in case when you intro more parameters. should have as many rows as parameters
-        
-        #Set variables
-        m = 0.5
-        m_min = 0.
-        m_max = 2.
-
-        n = 1.
-        n_min = 0.
-        n_max = 2.
-
-        rain_real = 1.5
-        rain_min = 0.
-        rain_max = 3.
-
-        erod_real = 5.e-6
-        erod_min = 3.e-6
-        erod_max = 7.e-6
-
-        real_caerial = 8.e-1 
-        real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
-
-        #Rainfall, erodibility, m, n, cmarine, caerial
-        maxlimits_vec = [3.0,7.e-6,n,m,real_cmarine,real_caerial] 
-        minlimits_vec = [0.0 ,3.e-6,n,m,real_cmarine,real_caerial]
-        
-        #Fix the variables here.
-        # minlimits_vec=[rain_min,erod_min,m,n]
-        # maxlimits_vec=[rain_max,erod_max,m,n]
-
-        likelihood_sediment = True
-
-        vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
-        stepsize_ratio  = 0.02 
-
-        stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) #[stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio]
-
-        num_param = vec_parameters.size
-
-
-        erodep_coords =  np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]]) # need to hand pick given your problem
-
-        if (true_parameter_vec.shape[0] != vec_parameters.size ) :
-            print( 'vec_params != true_values.txt ',true_parameter_vec.shape,vec_parameters.size)
-            print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 
-            
-            return 
-
-
-    elif problem == 4:
+    elif problem == 2:
         problemfolder = 'Examples/etopo/'
         xmlinput = problemfolder + 'etopo.xml'
         simtime = 1000000
@@ -1434,49 +1348,9 @@ def main():
             
             return
 
+ 
 
-    elif problem == 5:
-        problemfolder = 'Examples/tasmania/'
-        xmlinput = problemfolder + 'tasmania.xml'
-        simtime = 1000000
-        resolu_factor = 1
-
-        true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt')
-        
-        m = 0.5 # used to be constants  
-        n = 1
-
-        real_rain = 1.5
-        real_erod = 5.e-5
-
-        likelihood_sediment = True
-
-        real_caerial = 8.e-1 
-        real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
-
-        maxlimits_vec = [3.0,7.e-6, 2, 2,  1.0, 0.7]  # [rain, erod] this can be made into larger vector, with region based rainfall, or addition of other parameters
-        minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.6, 0.3 ]   # hence, for 4 regions of rain and erod[rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod_reg1, erod_reg2, erod_reg3, erod_reg4 ]
-                                    ## hence, for 4 regions of rain and 1 erod, plus other free parameters (p1, p2) [rain_reg1, rain_reg2, rain_reg3, rain_reg4, erod, p1, p2 ]
-
-                                    #if you want to freeze a parameter, keep max and min limits the same
-        vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
-    
-    
-        stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
-
-        stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
-        num_param = vec_parameters.size
-
-        print(vec_parameters) 
-        
-        erodep_coords = np.array([[42,10],[39,8],[75,51],[59,13],[40,5],[6,20],[14,66],[4,40],[72,73],[46,64]])  # need to hand pick given your problem
-        if (true_parameter_vec.shape[0] != vec_parameters.size ) :
-            print( 'vec_params != true_values.txt ',true_parameter_vec.shape,vec_parameters.size)
-            print( 'make sure that this is updated in case when you intro more parameters. should have as many rows as parameters ') 
-            
-            return
-
-    elif problem == 6:
+    elif problem == 3:
         problemfolder = 'Examples/mountain/'
         xmlinput = problemfolder + 'mountain.xml'
         simtime = 1000000

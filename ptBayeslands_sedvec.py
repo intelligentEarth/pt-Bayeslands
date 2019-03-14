@@ -768,7 +768,7 @@ class ParallelTempering:
 
 
         for s in range(self.num_param):  
-            self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s), self.realvalues[s,:]  ) 
+            self.plot_figure(pos_param[s,:], 'pos_distri_'+str(s), self.realvalues[s]  ) 
 
 
 
@@ -1119,6 +1119,7 @@ class ParallelTempering:
         plt.title("Posterior distribution ", fontsize = size)
         plt.xlabel(' Parameter value  ', fontsize = size)
         plt.ylabel(' Frequency ', fontsize = size)
+        plt.axvline(x=real_value, linewidth=2, color='r')
         plt.tight_layout()  
         plt.savefig(fname + '/pos_plots/' + title  + '_posterior.pdf')
         plt.clf()
@@ -1273,13 +1274,15 @@ def main():
     #problem = input("Which problem do you want to choose 1. crater-fast, 2. crater  3. etopo-fast 4. etopo 5. island ")
  
 
-    elif problem == 1:
+    if problem == 1:
         problemfolder = 'Examples/crater/'
         xmlinput = problemfolder + 'crater.xml'
         simtime = 50000
         resolu_factor =  0.002
 
         true_parameter_vec = np.loadtxt(problemfolder + 'data/true_values.txt') 
+
+        print(true_parameter_vec, ' true_parameter_vec')
 
         m = 0.5 # used to be constants  
         n = 1
@@ -1290,8 +1293,11 @@ def main():
         likelihood_sediment = True
 
         #Rainfall, erodibility, m, n
-        maxlimits_vec = [3.0,7.e-5, 2, 2] 
-        minlimits_vec = [0.0 ,3.e-5, 0, 0]  
+        #maxlimits_vec = [3.0,7.e-5, 2, 2] 
+        #minlimits_vec = [0.0 ,3.e-5, 0, 0]  
+
+        maxlimits_vec = [3.0,7.e-5, m, n] # setting to real values means its now fixed, not free parameter
+        minlimits_vec = [0.0 ,3.e-5, m, n]  
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
         
         stepsize_ratio  = 0.02
@@ -1326,11 +1332,14 @@ def main():
         real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
         real_caerial = 8.e-1 #aerial diffusion
 
-        minlimits_vec = [0.0, 3.e-6, 0, 0, 0.6, 0.3]
-        maxlimits_vec = [3.0, 7.e-6, 2, 2, 1.0, 0.7]
+        #Rainfall, erodibility, m, n, marine, aerial
+        #minlimits_vec = [0.0, 3.e-6, 0, 0, 0.6, 0.3]
+        #maxlimits_vec = [3.0, 7.e-6, 2, 2, 1.0, 0.7]
 
-        #maxlimits_vec = [3.0,7.e-6, 2, 2,  0.7, 1.0]  
-        #minlimits_vec = [0.0 ,3.e-6, 0, 0, 0.3, 0.6 ]   
+
+        minlimits_vec = [0.0, 3.e-6, m, n, real_cmarine, real_caerial]  # setting to real values means its now fixed, not free parameter
+        maxlimits_vec = [3.0, 7.e-6, m, n,real_cmarine, real_caerial]
+   
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
     
         stepsize_ratio  = 0.1 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
@@ -1382,9 +1391,7 @@ def main():
         #Rainfall, erodibility, m, n, uplift
         minlimits_vec=[rain_min,erod_min,m_min,n_min,uplift_min]
         maxlimits_vec=[rain_max,erod_max,m_max,n_max,uplift_max]
-                
-        #minlimits_vec=[rain_real,erod_real,m,n,uplift_min]
-        #maxlimits_vec=[rain_real,erod_real,m,n,uplift_max] 
+                 
                 
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 

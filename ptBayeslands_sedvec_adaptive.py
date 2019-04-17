@@ -112,6 +112,8 @@ class ptReplica(multiprocessing.Process):
         self.cholesky = [] 
         self.cov_init = False
         self.use_cov = False
+        self.cov_counter = 0 
+
     def interpolateArray(self, coords=None, z=None, dz=None):
         """
         Interpolate the irregular spaced dataset from badlands on a regular grid.
@@ -243,14 +245,13 @@ class ptReplica(multiprocessing.Process):
 
     def computeCovariance(self, i, pos_v):
         cov_mat = np.cov(pos_v[:i,].T)
-        np.savetxt('cov_mat.txt', cov_mat )
+        # np.savetxt('%s/cov_mat_%s.txt' %(self.filename,self.temperature), cov_mat )
         cov_noise = self.stepratio_vec*np.identity(cov_mat.shape[0], dtype = float)
-        # print('step ratio vector', self.stepratio_vec)
-        # print ('cov_noise', cov_noise)
         covariance = np.add(cov_mat, cov_noise)        
         L = np.linalg.cholesky(covariance)
         self.cholesky = L
         self.cov_init = True
+        # self.cov_counter += 1 
 
     def run(self):
 
@@ -342,22 +343,32 @@ class ptReplica(multiprocessing.Process):
                 [likelihood, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal) 
                 init_count = 1
 
+
             if self.cov_init: # and use_cov:        
-                print ('self. cholesky', self.cholesky)
-                print(' v_prop', v_proposal )  
-                v_proposal = np.dot(self.cholesky,v_proposal)
-            
+                # print ('self. cholesky', self.cholesky)
+                # print(' v_prop %s' %self.temperature, v_p)
+                # print ('v_current shape ', v_current.shape) 
+                v_p = np.random.normal(size = v_current.shape)
+                # print ('\nv_proposal shapessssssss', v_proposal.shape , v_p.shape)
+                # print ('\nv_proposal shapessssssss', v_proposal , v_p)
+
+                v_proposal = v_current + np.dot(self.cholesky,v_proposal)
+                # print ('\n Proposal after using v_proposal %s' % (int(self.temperature)), v_proposal)
+                
+                v_proposal = v_current + np.dot(self.cholesky,v_p)
+                # print ('\n Proposal after using v_p %s' %(int(self.temperature)), v_proposal)
+
             # Update by perturbing all the  parameters via "random-walk" sampler and check limits
-            
-            v_proposal_ =  np.random.normal(v_current,stepsize_vec)
+            else:    
+                v_proposal =  np.random.normal(v_current,stepsize_vec)
 
             for j in range(v_current.size):
-                if v_proposal_[j] > self.maxlimits_vec[j]:
-                    v_proposal_[j] = v_current[j]
-                elif v_proposal_[j] < self.minlimits_vec[j]:
-                    v_proposal_[j] = v_current[j]
+                if v_proposal[j] > self.maxlimits_vec[j]:
+                    v_proposal[j] = v_current[j]
+                elif v_proposal[j] < self.minlimits_vec[j]:
+                    v_proposal[j] = v_current[j]
 
-            print('v_proposal_ ',v_proposal_)  
+            # print('v_proposal_ %s '%self.temperature,v_proposal_)  
             # Passing paramters to calculate likelihood and rmse with new tau
             
             [likelihood_proposal, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal)
@@ -428,7 +439,7 @@ class ptReplica(multiprocessing.Process):
 
                     num_div += 1
 
-            if (i> 20 and i % self.adapt_cov == 1) :
+            if (i >= self.adapt_cov and i % self.adapt_cov == 0) :
                 print ('\ncov computed = i ',i, '\n')
                 self.computeCovariance(i,pos_param)
 
@@ -454,7 +465,7 @@ class ptReplica(multiprocessing.Process):
                         print ('error')
 
                 else:
-                    print(" . ")
+                    print("  ")
                     
                 self.event.clear()
 

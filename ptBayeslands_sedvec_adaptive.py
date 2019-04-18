@@ -161,8 +161,8 @@ class ptReplica(multiprocessing.Process):
         model.load_xml(str(self.run_nb), self.input, muted=True)
 
         # Adjust erodibility based on given parameter
-        model.input.SPLero = input_vector[1] 
-        model.flow.erodibility.fill(input_vector[1] )
+        model.input.SPLero = (input_vector[1] * 1.e-6) 
+        model.flow.erodibility.fill((input_vector[1]*1.e-6))
 
         # Adjust precipitation values based on given parameter
         model.force.rainVal[:] = input_vector[0] 
@@ -1327,7 +1327,7 @@ def main():
         n = 1
 
         real_rain = 1.5
-        real_erod = 5.e-5 
+        real_erod = 5.0
 
         likelihood_sediment = True
 
@@ -1335,8 +1335,8 @@ def main():
         #maxlimits_vec = [3.0,7.e-5, 2, 2] 
         #minlimits_vec = [0.0 ,3.e-5, 0, 0]  
 
-        maxlimits_vec = [3.0,7.e-5, 1, 2] # setting to real values means its now fixed, not free parameter
-        minlimits_vec = [0.0 ,3.e-5, 0, 0]  
+        maxlimits_vec = [3.0,7, 1, 2] # setting to real values means its now fixed, not free parameter
+        minlimits_vec = [0.0 ,3, 0, 0]  
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
         
         stepsize_ratio  = 0.01
@@ -1363,15 +1363,15 @@ def main():
 
 
         real_rain = 1.5 #m/a
-        real_erod = 5.e-6 
+        real_erod = 5 
         m = 0.5  #Stream flow parameters
         n = 1 #
         real_cmarine = 5.e-1 # Marine diffusion coefficient [m2/a] -->
         real_caerial = 8.e-1 #aerial diffusion
 
         #Rainfall, erodibility, m, n, marine, aerial
-        minlimits_vec = [0.0, 3.e-6, 0, 0, 0.6, 0.3]
-        maxlimits_vec = [3.0, 7.e-6, 2, 2, 1.0, 0.7]
+        minlimits_vec = [0.0, 3.0, 0, 0, 0.6, 0.3]
+        maxlimits_vec = [3.0, 7.0, 2, 2, 1.0, 0.7]
 
 
         # minlimits_vec = [0.0, 3.e-6, m, n, real_cmarine, real_caerial]  # setting to real values means its now fixed, not free parameter

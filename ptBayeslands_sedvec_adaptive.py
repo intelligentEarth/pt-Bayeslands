@@ -107,12 +107,14 @@ class ptReplica(multiprocessing.Process):
         self.sim_interval = sim_interval
         self.sedscalingfactor = 50 # this is to ensure that the sediment likelihood is given more emphasis as it considers fewer points (dozens of points) when compared to elev liklihood (thousands of points)
         self.adapttemp =  self.temperature
+        self.stepsize_vec = np.zeros(self.maxlimits_vec.size)
 
-        self.adapt_cov = 15
+        self.adapt_cov = 50
         self.cholesky = [] 
         self.cov_init = False
         self.use_cov = False
-        self.cov_counter = 0 
+        self.cov_counter = 0
+        self.repeated_proposal = False
 
     def interpolateArray(self, coords=None, z=None, dz=None):
         """
@@ -246,7 +248,15 @@ class ptReplica(multiprocessing.Process):
     def computeCovariance(self, i, pos_v):
         cov_mat = np.cov(pos_v[:i,].T)
         # np.savetxt('%s/cov_mat_%s.txt' %(self.filename,self.temperature), cov_mat )
-        cov_noise = self.stepratio_vec*np.identity(cov_mat.shape[0], dtype = float)
+        # print ('\n step ratio vec', self.stepratio_vec)
+        # print ('step size vec', self.stepsize_vec, '\n')
+
+        cov_noise_old = self.stepratio_vec*np.identity(cov_mat.shape[0], dtype = float)
+        cov_noise = self.stepsize_vec*np.identity(cov_mat.shape[0], dtype = float)
+        
+        # print ('\ncov_noise_old', cov_noise_old)
+        # print ('cov_noise_new', cov_noise, '\n')
+
         covariance = np.add(cov_mat, cov_noise)        
         L = np.linalg.cholesky(covariance)
         self.cholesky = L
@@ -259,11 +269,10 @@ class ptReplica(multiprocessing.Process):
 
         samples = self.samples
         count_list = [] 
-        stepsize_vec = np.zeros(self.maxlimits_vec.size)
         span = (self.maxlimits_vec-self.minlimits_vec) 
 
-        for i in range(stepsize_vec.size): # calculate the step size of each of the parameters
-            stepsize_vec[i] = self.stepratio_vec[i] * span[i]
+        for i in range(self.stepsize_vec.size): # calculate the step size of each of the parameters
+            self.stepsize_vec[i] = self.stepratio_vec[i] * span[i]
 
         v_proposal = self.vec_parameters # initial param values passed to badlands
         v_current = v_proposal # to give initial value of the chain
@@ -323,7 +332,7 @@ class ptReplica(multiprocessing.Process):
             outfile.write('\nburnin:,{0}'.format(self.burn_in))
             outfile.write('\nnum params:,{0}'.format(self.num_param))
             outfile.write('\ninitial_proposed_vec:,{0}'.format(v_proposal))
-            outfile.write('\nstepsize_vec:,{0}'.format(stepsize_vec))  
+            outfile.write('\nself.stepsize_vec:,{0}'.format(self.stepsize_vec))  
             outfile.write('\nstep_ratio_vec:,{0}'.format(self.stepratio_vec)) 
             outfile.write('\nswap interval:,{0}'.format(self.swap_interval))
             outfile.write('\nsim interval:,{0}'.format(self.sim_interval))
@@ -334,7 +343,7 @@ class ptReplica(multiprocessing.Process):
         for i in range(samples-1):
 
             print ("Temperature: ", self.temperature, ' Sample: ', i ,"/",samples)
-
+            self.repeated_proposal = False
             if i < pt_samples:
                 self.adapttemp =  self.temperature #* ratio  #
 
@@ -343,34 +352,38 @@ class ptReplica(multiprocessing.Process):
                 [likelihood, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal) 
                 init_count = 1
 
-
-            if self.cov_init: # and use_cov:        
-                # print ('self. cholesky', self.cholesky)
-                # print(' v_prop %s' %self.temperature, v_p)
-                # print ('v_current shape ', v_current.shape) 
+            if self.cov_init: # and self.use_cov:        
                 v_p = np.random.normal(size = v_current.shape)
-                # print ('\nv_proposal shapessssssss', v_proposal.shape , v_p.shape)
-                # print ('\nv_proposal shapessssssss', v_proposal , v_p)
-
-                v_proposal = v_current + np.dot(self.cholesky,v_proposal)
-                # print ('\n Proposal after using v_proposal %s' % (int(self.temperature)), v_proposal)
-                
                 v_proposal = v_current + np.dot(self.cholesky,v_p)
-                # print ('\n Proposal after using v_p %s' %(int(self.temperature)), v_proposal)
+                # v_proposal = v_current + np.dot(self.cholesky,v_proposal)
 
             # Update by perturbing all the  parameters via "random-walk" sampler and check limits
             else:    
-                v_proposal =  np.random.normal(v_current,stepsize_vec)
+                v_proposal =  np.random.normal(v_current,self.stepsize_vec)
 
+
+            # for j in range(v_current.size):
+            #     if v_proposal[j] > self.maxlimits_vec[j]:
+            #         self.repeated_proposal = True
+            #         break
+            #     elif v_proposal[j] < self.minlimits_vec[j]:
+            #         self.repeated_proposal = True
+            #         break
+            
+            # # Passing paramters to calculate likelihood and rmse with new tau
+            # if self.repeated_proposal:
+            #     v_proposal = v_current
+            #     likelihood_proposal = likelihood
+            # else:
+            #     [likelihood_proposal, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal)
+
+            # Original conditional proposals
             for j in range(v_current.size):
                 if v_proposal[j] > self.maxlimits_vec[j]:
                     v_proposal[j] = v_current[j]
                 elif v_proposal[j] < self.minlimits_vec[j]:
                     v_proposal[j] = v_current[j]
 
-            # print('v_proposal_ %s '%self.temperature,v_proposal_)  
-            # Passing paramters to calculate likelihood and rmse with new tau
-            
             [likelihood_proposal, predicted_elev,  pred_erodep_pts, likl_without_temp, avg_rmse_el, avg_rmse_er] = self.likelihood_func(v_proposal)
 
             final_predtopo= predicted_elev[self.simtime]
@@ -1322,11 +1335,11 @@ def main():
         #maxlimits_vec = [3.0,7.e-5, 2, 2] 
         #minlimits_vec = [0.0 ,3.e-5, 0, 0]  
 
-        maxlimits_vec = [3.0,7.e-5, m, n] # setting to real values means its now fixed, not free parameter
-        minlimits_vec = [0.0 ,3.e-5, m, n]  
+        maxlimits_vec = [3.0,7.e-5, 1, 2] # setting to real values means its now fixed, not free parameter
+        minlimits_vec = [0.0 ,3.e-5, 0, 0]  
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
         
-        stepsize_ratio  = 0.02
+        stepsize_ratio  = 0.01
         
         stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
         num_param = vec_parameters.size 
@@ -1357,12 +1370,12 @@ def main():
         real_caerial = 8.e-1 #aerial diffusion
 
         #Rainfall, erodibility, m, n, marine, aerial
-        #minlimits_vec = [0.0, 3.e-6, 0, 0, 0.6, 0.3]
-        #maxlimits_vec = [3.0, 7.e-6, 2, 2, 1.0, 0.7]
+        minlimits_vec = [0.0, 3.e-6, 0, 0, 0.6, 0.3]
+        maxlimits_vec = [3.0, 7.e-6, 2, 2, 1.0, 0.7]
 
 
-        minlimits_vec = [0.0, 3.e-6, m, n, real_cmarine, real_caerial]  # setting to real values means its now fixed, not free parameter
-        maxlimits_vec = [3.0, 7.e-6, m, n,real_cmarine, real_caerial]
+        # minlimits_vec = [0.0, 3.e-6, m, n, real_cmarine, real_caerial]  # setting to real values means its now fixed, not free parameter
+        # maxlimits_vec = [3.0, 7.e-6, m, n,real_cmarine, real_caerial]
    
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
     

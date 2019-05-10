@@ -14,12 +14,10 @@ import numpy as np
 import random
 import time
 import operator
-import math
-import cmocean as cmo
-from pylab import rcParams
+import math  
 import copy
 from copy import deepcopy
-import cmocean as cmo
+#import cmocean as cmo
 from pylab import rcParams
 import collections
 from scipy import special
@@ -59,6 +57,8 @@ parser.add_argument('-swap','--swap', help='Swap Ratio', dest="swap_ratio",defau
 parser.add_argument('-b','--burn', help='How many samples to discard before determing posteriors', dest="burn_in",default=0.25,type=float)
 parser.add_argument('-pt','--ptsamples', help='Ratio of PT vs straight MCMC samples to run', dest="pt_samples",default=0.5,type=float)
 
+parser.add_argument('-step','--step', help='Step size for proposals (0.02, 0.05, 0.1 etc)', dest="step_size",default=0.05,type=float)
+
 args = parser.parse_args()
     
 #parameters for Parallel Tempering
@@ -68,10 +68,13 @@ num_chains = args.num_chains
 swap_ratio = args.swap_ratio
 burn_in=args.burn_in
 #maxtemp = int(num_chains * 5)/args.mt_val
-maxtemp =  num_chains*args.mt_val 
+maxtemp =   args.mt_val 
 swap_interval = int(swap_ratio * (samples/num_chains)) #how ofen you swap neighbours
 num_successive_topo = 4
 pt_samples = samples*args.pt_samples
+
+step_size =  args.step_size
+
 
 
 
@@ -161,8 +164,13 @@ class ptReplica(multiprocessing.Process):
         model.load_xml(str(self.run_nb), self.input, muted=True)
 
         # Adjust erodibility based on given parameter
-        model.input.SPLero = (input_vector[1] * 1.e-6) 
-        model.flow.erodibility.fill((input_vector[1]*1.e-6))
+
+        if problem==1:
+            model.input.SPLero = (input_vector[1] * 1.e-5) 
+            model.flow.erodibility.fill((input_vector[1]*1.e-5))
+        else:
+            model.input.SPLero = (input_vector[1] * 1.e-6) 
+            model.flow.erodibility.fill((input_vector[1]*1.e-6))
 
         # Adjust precipitation values based on given parameter
         model.force.rainVal[:] = input_vector[0] 
@@ -171,14 +179,14 @@ class ptReplica(multiprocessing.Process):
         model.input.SPLm = input_vector[2] 
         model.input.SPLn = input_vector[3] 
 
-        #Check if it is the etopo extended problem
-        if problem == 4 or problem == 3:  # will work for more parameters
+        #Check if it is the etopo   problem
+        if problem == 2:    # will work for more parameters
             model.input.CDm = input_vector[4] # submarine diffusion
             model.input.CDa = input_vector[5] # aerial diffusion
 
 
         #Check if it is the mountain problem
-        if problem==6:
+        if problem==3:
             #Round the input vector 
             k=round(input_vector[4],1) #to closest 0.1
 
@@ -251,7 +259,7 @@ class ptReplica(multiprocessing.Process):
         # print ('\n step ratio vec', self.stepratio_vec)
         # print ('step size vec', self.stepsize_vec, '\n')
 
-        cov_noise_old = self.stepratio_vec*np.identity(cov_mat.shape[0], dtype = float)
+        cov_noise_old = (self.stepratio_vec * self.stepratio_vec)*np.identity(cov_mat.shape[0], dtype = float)
         cov_noise = self.stepsize_vec*np.identity(cov_mat.shape[0], dtype = float)
         
         # print ('\ncov_noise_old', cov_noise_old)
@@ -1050,9 +1058,14 @@ class ParallelTempering:
         # Load the XmL input file
         model.load_xml(str(self.run_nb), self.input, muted=True)
 
-        # Adjust erodibility based on given parameter
-        model.input.SPLero = input_vector[1] 
-        model.flow.erodibility.fill(input_vector[1] )
+        # Adjust erodibility based on given parameter 
+
+        if problem==1:
+            model.input.SPLero = (input_vector[1] * 1.e-5) 
+            model.flow.erodibility.fill((input_vector[1]*1.e-5))
+        else:
+            model.input.SPLero = (input_vector[1] * 1.e-6) 
+            model.flow.erodibility.fill((input_vector[1]*1.e-6))
 
         # Adjust precipitation values based on given parameter
         model.force.rainVal[:] = input_vector[0] 
@@ -1068,7 +1081,7 @@ class ParallelTempering:
 
 
         #Check if it is the mountain problem
-        if problem==6:
+        if problem==3:
             #Round the input vector 
             k=round(input_vector[4],1) #to closest 0.1
 
@@ -1339,7 +1352,7 @@ def main():
         minlimits_vec = [0.0 ,3, 0, 0]  
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) 
         
-        stepsize_ratio  = 0.01
+        stepsize_ratio  = step_size
         
         stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
         num_param = vec_parameters.size 
@@ -1379,7 +1392,7 @@ def main():
    
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
     
-        stepsize_ratio  = 0.1 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+        stepsize_ratio  = step_size #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
         stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
         num_param = vec_parameters.size
@@ -1415,9 +1428,9 @@ def main():
         rain_min = 0.
         rain_max = 3.
 
-        erod_real = 5.e-6
-        erod_min = 3.e-6
-        erod_max = 7.e-6
+        erod_real = 5 
+        erod_min = 3 
+        erod_max = 7 
                 
         #uplift_real = 50000
         uplift_min = 0.1 # X uplift_real
@@ -1429,11 +1442,11 @@ def main():
                 
         vec_parameters = np.random.uniform(minlimits_vec, maxlimits_vec) #  draw intial values for each of the free parameters
 
-        stepsize_ratio  = 0.02 #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
+        stepsize_ratio  = step_size #   you can have different ratio values for different parameters depending on the problem. Its safe to use one value for now
 
         stepratio_vec =  np.repeat(stepsize_ratio, vec_parameters.size) 
-        stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, 0.02] 
-        stepratio_vec = [0.1, 0.1, 0.1, 0.1, 0.1]
+        #stepratio_vec = [stepsize_ratio, stepsize_ratio, stepsize_ratio, stepsize_ratio, 0.02] 
+        #stepratio_vec = [0.1, 0.1, 0.1, 0.1, 0.1]
         print("steps: ", stepratio_vec)
         num_param = vec_parameters.size
         erodep_coords=np.array([[5,5],[10,10],[20,20],[30,30],[40,40],[50,50],[25,25],[37,30],[44,27],[46,10]])
@@ -1454,11 +1467,11 @@ def main():
 
     fname = ""
     run_nb = 0
-    while os.path.exists(problemfolder +'results_%s' % (run_nb)):
+    while os.path.exists(problemfolder +'results_adap%s' % (run_nb)):
         run_nb += 1
-    if not os.path.exists(problemfolder +'results_%s' % (run_nb)):
-        os.makedirs(problemfolder +'results_%s' % (run_nb))
-        fname = (problemfolder +'results_%s' % (run_nb))
+    if not os.path.exists(problemfolder +'results_adap%s' % (run_nb)):
+        os.makedirs(problemfolder +'results_adap%s' % (run_nb))
+        fname = (problemfolder +'results_adap%s' % (run_nb))
 
     #fname = ('sampleresults')
 
@@ -1581,7 +1594,7 @@ def main():
 
     time_total = (timer_end-timer_start)/60
 
-    resultingfile_db = open(problemfolder+'/master_result_file.txt','a+')  
+    resultingfile_db = open(problemfolder+'/master_result_fileadapt.txt','a+')  
     allres =  np.asarray([ problem, num_chains, maxtemp, samples,swap_interval,  rmse_el, 
                         rmse_er, rmse_el_std, rmse_er_std, rmse_el_min, 
                         rmse_er_min,  swap_perc, accept_per, time_total]) 
@@ -1601,8 +1614,8 @@ def main():
 
     fname_remove = fname +'/pos_param.txt'
 
-    if os.path.exists(fname_remove):  # comment if you wish to keep pos file
-        os.remove(fname_remove)
+    #if os.path.exists(fname_remove):  # comment if you wish to keep pos file
+        #os.remove(fname_remove)
 
     #stop()
 if __name__ == "__main__": main()

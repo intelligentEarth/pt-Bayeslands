@@ -464,7 +464,7 @@ class ptReplica(multiprocessing.Process):
                 print ('\ncov computed = i ',i, '\n')
                 self.computeCovariance(i,pos_param)
 
-            if ( i % self.swap_interval == 0 ):
+            if ( (i+1) % self.swap_interval == 0 ):
                 others = np.asarray([likelihood])
                 param = np.concatenate([v_current,others,np.asarray([self.temperature])])     
 
@@ -760,7 +760,7 @@ class ParallelTempering:
 
         swaps_appected_main = 0
         total_swaps_main = 0        
-        while True:
+        for i in range(int(self.NumSamples/self.swap_interval)):
             count = 0
             for index in range(self.num_chains):
                 if not self.chains[index].is_alive():

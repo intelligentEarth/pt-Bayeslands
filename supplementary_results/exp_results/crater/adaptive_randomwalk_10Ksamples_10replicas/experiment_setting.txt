@@ -1,0 +1,201 @@
+
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50
+samples_per_chain:,1000
+burnin:,0.4
+num params:,4
+initial_proposed_vec:,[1.16073892 5.410385   0.79829828 1.04806191]
+self.stepsize_vec:,[0.15 0.2  0.05 0.1 ]
+step_ratio_vec:,[0.05 0.05 0.05 0.05]
+swap interval:,10
+sim interval:,[    0. 12500. 25000. 37500. 50000.]
+likelihood_sed (T/F):,True
+erodep_coords:,[[ 60  60]
+ [ 52  67]
+ [ 74  76]
+ [ 62  45]
+ [ 72  66]
+ [ 85  73]
+ [ 90  75]
+ [ 44  86]
+ [100  80]
+ [ 88  69]]
+sed scaling factor:,50

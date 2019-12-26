@@ -465,6 +465,7 @@ class ptReplica(multiprocessing.Process):
                 self.computeCovariance(i,pos_param)
 
             if ( (i+1) % self.swap_interval == 0 ):
+
                 others = np.asarray([likelihood])
                 param = np.concatenate([v_current,others,np.asarray([self.temperature])])     
 
@@ -472,38 +473,34 @@ class ptReplica(multiprocessing.Process):
                 self.parameter_queue.put(param)
                 
                 #signal main process to start and start waiting for signal for main
-                self.signal_main.set()              
+                self.signal_main.set()      
+                self.event.clear()         
                 self.event.wait()
-                
-                # retrieve parametsrs fom ques if it has been swapped
-                if not self.parameter_queue.empty() : 
-                    try:
-                        result =  self.parameter_queue.get()
-                        v_current= result[0:v_current.size]     
-                        likelihood = result[v_current.size]
 
-                    except:
-                        print ('error')
+                result =  self.parameter_queue.get()
+                v_current= result[0:v_current.size]     
+                likelihood = result[v_current.size]
+                 
 
-                else:
-                    print("  ")
-                    
-                self.event.clear()
+
+        others = np.asarray([ likelihood])
+        param = np.concatenate([v_current,others,np.asarray([self.temperature])]) 
+
+        self.parameter_queue.put(param) 
+        self.signal_main.set()  
+
 
         #----------end for loop of samples----------------------------- 
 
 
         accepted_count =  len(count_list) 
-        accept_ratio = accepted_count / (samples * 1.0) * 100
-        others = np.asarray([ likelihood])
-        param = np.concatenate([v_current,others,np.asarray([self.temperature])])   
+        accept_ratio = accepted_count / (samples * 1.0) * 100 
 
         print("param first:",param)
         print("v_current",v_current)
         print("others",others)
         print("temp",np.asarray([self.temperature]))
-        
-        self.parameter_queue.put(param)
+         
 
         #Save out the data for each chain
         file_name = self.filename+'/posterior/pos_parameters/chain_'+ str(self.temperature)+ '.txt'
@@ -544,9 +541,7 @@ class ptReplica(multiprocessing.Process):
 
             file_name = self.filename + '/posterior/predicted_topo/chain_' + str(k) + '_' + str(self.temperature) + '.txt'
             np.savetxt(file_name, mean_pred_elevation, fmt='%.2f')
-
-        self.signal_main.set()
-
+ 
 
 class ParallelTempering:
 
@@ -692,26 +687,23 @@ class ParallelTempering:
             
             
     def swap_procedure(self, parameter_queue_1, parameter_queue_2):
-        #print (parameter_queue_2, ", param1:",parameter_queue_1)
-        if parameter_queue_2.empty() is False and parameter_queue_1.empty() is False:
+        # if parameter_queue_2.empty() is False and parameter_queue_1.empty() is False:
             param1 = parameter_queue_1.get()
             param2 = parameter_queue_2.get()
-            lhood1 = param1[self.num_param]
+            
+            w1 = param1[0:self.num_param] 
+            lhood1 = param1[self.num_param+1]
             T1 = param1[self.num_param+1]
-            lhood2 = param2[self.num_param]
+            w2 = param2[0:self.num_param] 
+            lhood2 = param2[self.num_param+1]
             T2 = param2[self.num_param+1]
 
-            #SWAPPING PROBABILITIES
-            #old method
-            swap_proposal =  (lhood1/[1 if lhood2 == 0 else lhood2])*(1/T1 * 1/T2)
+
+            try:
+                swap_proposal =  min(1,0.5*np.exp(min(709, lhood2 - lhood1)))
+            except OverflowError:
+                swap_proposal = 1
             u = np.random.uniform(0,1)
-            
-            #new method (sandbridge et al.)
-            #try:
-            #    swap_proposal = min(1, 0.5*math.exp(lhood1-lhood2))
-            #except OverflowError as e:
-            #    print("overflow for swap prop, setting to 1")
-            #    swap_proposal = 1
             swapped = False
             if u < swap_proposal: 
                 self.total_swap_proposals += 1
@@ -722,58 +714,49 @@ class ParallelTempering:
                 swapped = True
             else:
                 swapped = False
-            return param1, param2,swapped 
-
-        else:
-            self.total_swap_proposals += 1
-            return
+                self.total_swap_proposals += 1
+            return param1, param2,swapped
     
 
     def run_chains (self ):
         
-        # only adjacent chains can be swapped therefore, the number of proposals is ONE less num_chains
-        swap_proposal = np.ones(self.num_chains-1) 
         
+        swap_proposal = np.ones(self.num_chains-1) 
         # create parameter holders for paramaters that will be swapped
         replica_param = np.zeros((self.num_chains, self.num_param))  
         lhood = np.zeros(self.num_chains)
-
         # Define the starting and ending of MCMC Chains
         start = 0
         end = self.NumSamples-1
         number_exchange = np.zeros(self.num_chains)
-
         filen = open(self.folder + '/num_exchange.txt', 'a')
-
-        #-------------------------------------------------------------------------------------
-        # run the MCMC chains
-        #-------------------------------------------------------------------------------------
+        #RUN MCMC CHAINS
         for l in range(0,self.num_chains):
             self.chains[l].start_chain = start
             self.chains[l].end = end
-        
-        #-------------------------------------------------------------------------------------
-        # run the MCMC chains
-        #-------------------------------------------------------------------------------------
         for j in range(0,self.num_chains):        
+            self.wait_chain[j].clear()
+            self.event[j].clear()
             self.chains[j].start()
+        #SWAP PROCEDURE
 
-        swaps_appected_main = 0
-        total_swaps_main = 0        
+        swaps_appected_main =0
+        total_swaps_main =0
         for i in range(int(self.NumSamples/self.swap_interval)):
             count = 0
             for index in range(self.num_chains):
                 if not self.chains[index].is_alive():
                     count+=1
+                    self.wait_chain[index].set()
                     print(str(self.chains[index].temperature) +" Dead")
 
             if count == self.num_chains:
                 break
-            print("Waiting for chains to finish...")
+            print("Waiting")
             timeout_count = 0
             for index in range(0,self.num_chains):
                 print("Waiting for chain: {}".format(index+1))
-                flag = self.wait_chain[index].wait(timeout=5)
+                flag = self.wait_chain[index].wait()
                 if flag:
                     print("Signal from chain: {}".format(index+1))
                     timeout_count += 1
@@ -784,16 +767,13 @@ class ParallelTempering:
             print("Event occured")
             for index in range(0,self.num_chains-1):
                 print('starting swap')
-                try:
-                    param_1, param_2, swapped = self.swap_procedure(self.parameter_queue[index],self.parameter_queue[index+1])
-                    self.parameter_queue[index].put(param_1)
-                    self.parameter_queue[index+1].put(param_2)
-                    if index == 0:
-                        if swapped:
-                            swaps_appected_main += 1
-                        total_swaps_main += 1
-                except:
-                    print("Nothing Returned by swap method!")
+                param_1, param_2, swapped = self.swap_procedure(self.parameter_queue[index],self.parameter_queue[index+1])
+                self.parameter_queue[index].put(param_1)
+                self.parameter_queue[index+1].put(param_2)
+                if index == 0:
+                    if swapped:
+                        swaps_appected_main += 1
+                    total_swaps_main += 1
             for index in range (self.num_chains):
                     self.event[index].set()
                     self.wait_chain[index].clear()
@@ -804,6 +784,7 @@ class ParallelTempering:
         for index in range(0,self.num_chains):
             self.chains[index].join()
         self.chain_queue.join()
+
 
         print(number_exchange, 'num_exchange, process ended')
 

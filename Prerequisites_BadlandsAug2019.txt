@@ -1,0 +1,80 @@
+sudo apt-get update -y
+
+ 
+
+sudo apt-get install -y git python python-numpy python-scipy python-pip python-dev python-setuptools python-matplotlib libzmq3-dev pkg-config libfreetype6-dev libopenmpi-dev openmpi-bin libhdf5-dev liblapack-dev libedit-dev gfortran libnetcdf-dev python-mpltoolkits.basemap
+
+ 
+
+##sudo apt-get install libpng3 llvm-3.6 # Currently causing crashes due to latest upgrade
+
+ 
+
+sudo pip install -U setuptools
+
+sudo pip install -U pip # fixes AssertionError in Ubuntu pip
+
+sudo pip install enum34
+
+ 
+
+sudo pip install jupyter markupsafe zmq singledispatch backports_abc certifi jsonschema ipyparallel path.py matplotlib mpi4py==1.3.1   
+  
+
+sudo pip install git+https://github.com/drufat/triangle
+
+sudo pip install Cython==0.20 h5py scipy numpy ez_setup numba
+
+sudo pip install plotly==2.3.0
+
+ 
+
+# sudo pip install gFlex (Had to install using github Link https://github.com/awickert/gFlex) (download and install via the folder setup.py)
+
+ 
+
+sudo pip install netcdf4 colorlover scikit-fuzzy pyevtk cmocean
+
+ 
+
+Step 2:
+
+ 
+
+git clone https://github.com/badlands-model/badlands.git
+
+ 
+
+cd BadLands/pyBadlands/libUtils
+
+sudo make
+
+ 
+
+# Go to parent directory of cloned repo such as home and run
+
+sudo pip install -e paralleltemp_Bayeslands   (foldername - or pt-Bayeslands)
+
+ 
+
+Step 3:
+
+ 
+
+cd to home directory /home/
+
+nano .bashrc
+
+ 
+
+#add path at the end replacing 'home/danial' with relevant path of your local repo
+
+ 
+
+export LD_LIBRARY_PATH="/home/danial/BadLands/pyBadlands/libUtils:$LD_LIBR$"   (should be your path)
+
+ 
+
+export PYTHON_PATH="/home/danial/BadLands/pyBadlands/libUtils:$PYTHON_PATH"    (should be your path)
+
+

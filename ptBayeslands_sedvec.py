@@ -436,7 +436,7 @@ class ptReplica(multiprocessing.Process):
 
                 result =  self.parameter_queue.get()
                 v_current= result[0:v_current.size]     
-                likelihood = result[v_current.size]
+                #likelihood = result[v_current.size]
                  
 
 

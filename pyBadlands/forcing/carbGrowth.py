@@ -14,7 +14,7 @@ import os
 import time
 import numpy
 import pandas
-import triangle
+import tribad as triangle
 import mpi4py.MPI as mpi
 from pyBadlands.libUtils import ORmodel
 from scipy.ndimage.filters import gaussian_filter

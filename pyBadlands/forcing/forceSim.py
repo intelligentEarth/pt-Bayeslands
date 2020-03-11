@@ -13,7 +13,7 @@ processes related to climate, tectonic and sea level.
 import os
 import numpy
 import pandas
-import triangle
+import tribad as triangle
 import mpi4py.MPI as mpi
 from pyBadlands.libUtils import ORmodel
 from scipy.ndimage.filters import gaussian_filter

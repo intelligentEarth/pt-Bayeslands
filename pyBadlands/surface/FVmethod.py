@@ -14,7 +14,7 @@ import time
 import numpy
 from pyBadlands.libUtils import FVframe
 import warnings
-import triangle
+import tribad as triangle
 import mpi4py.MPI as mpi
 
 

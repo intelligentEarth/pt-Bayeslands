@@ -21,7 +21,6 @@ sudo pip install enum34
 sudo pip install jupyter markupsafe zmq singledispatch backports_abc certifi jsonschema ipyparallel path.py matplotlib mpi4py==1.3.1   
   
 
-sudo pip install git+https://github.com/drufat/triangle
 
 sudo pip install Cython==0.20 h5py scipy numpy ez_setup numba
 
@@ -29,12 +28,29 @@ sudo pip install plotly==2.3.0
 
  
 
-# sudo pip install gFlex (Had to install using github Link https://github.com/awickert/gFlex) (download and install via the folder setup.py)
+# sudo pip install gFlex (If does not work, install using github Link https://github.com/awickert/gFlex) (download and install via the folder setup.py)
 
  
 
 sudo pip install netcdf4 colorlover scikit-fuzzy pyevtk cmocean
 
+pip install Pillow
+
+sudo apt-get install python-tk 
+
+pip install pandas
+
+sudo apt-get install libgfortran3
+
+pip install dbfpy (needed for continental Bayeslands Aus only)
+
+
+
+new update - 2020
+
+sudo pip install git+https://github.com/drufat/triangle ( no need for this )
+
+sudo pip install tribad (ensure all import triangle is changed to import tribad as triangle in pyBadlands files - use Atom)
  
 
 Step 2:

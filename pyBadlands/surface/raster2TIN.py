@@ -18,7 +18,7 @@ import errno
 import pandas
 import os.path
 import warnings
-import triangle
+import tribad as triangle
 from uuid import uuid4
 from shutil import rmtree
 from scipy import interpolate
